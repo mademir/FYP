@@ -17,6 +17,8 @@ public class PlayerController : MonoBehaviour
     private float verticalRotationLimit = -80f;
     public bool canMove = true;
 
+    public Transform spawn;
+
 
     // Start is called before the first frame update
     void Start()
@@ -80,5 +82,10 @@ public class PlayerController : MonoBehaviour
         {
             rb.velocity = Vector3.zero;
         }
+    }
+
+    public void Die()
+    {
+        transform.SetPositionAndRotation(spawn.position, spawn.rotation);
     }
 }
