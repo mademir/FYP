@@ -132,8 +132,27 @@ namespace Networking {
             }
         }
 
-        static void CreateLobby(string lobbyName, TcpClient tcpClient)
+        static void CreateLobby(string data, TcpClient tcpClient)
         {
+            var lobbyInfo = JsonSerializer.Deserialize<COM.CreateLobbyInfo>(data);
+            if (lobbyInfo == null) return;
+            if (lobbyInfo.LobbyName == "") return;
+
+            lock (lobbiesLock)
+            {
+                if (lobbies.Where(lobby => lobby.Name == lobbyInfo.LobbyName).Count() == 0)
+                {
+                    string clientIP = tcpClient.Client.RemoteEndPoint != null ? (tcpClient.Client.RemoteEndPoint as IPEndPoint).Address.ToString() : "";
+                    Console.WriteLine($"Client IP: {clientIP}");
+                    lobbies.Add(new Lobby(lobbyInfo.LobbyName, new Client(lobbyInfo.PlayerName, clientIP, true)));//GET ACTUAL CLIENT NAME
+                    Console.WriteLine($"Lobby '{lobbyInfo.LobbyName}' created by '{lobbyInfo.PlayerName}'.");
+                }
+                else
+                {
+                    Console.WriteLine($"Lobby '{lobbyInfo.LobbyName}' already exists.");
+                }
+            }
+            /*
             if (lobbyName == "") return;
 
             lock (lobbiesLock)
@@ -141,6 +160,7 @@ namespace Networking {
                 if (lobbies.Where(lobby => lobby.Name ==  lobbyName).Count() == 0)
                 {
                     string clientIP = tcpClient.Client.RemoteEndPoint != null ? (tcpClient.Client.RemoteEndPoint as IPEndPoint).Address.ToString() : "";
+                    Console.WriteLine($"Client IP: {clientIP}");
                     lobbies.Add(new Lobby(lobbyName, new Client(lobbyName, clientIP, true)));//GET ACTUAL CLIENT NAME
                     Console.WriteLine($"Lobby '{lobbyName}' created by a player.");
                 }
@@ -148,7 +168,7 @@ namespace Networking {
                 {
                     Console.WriteLine($"Lobby '{lobbyName}' already exists.");
                 }
-            }
+            }*/
         }
 
         static void JoinLobby(string lobbyID, TcpClient tcpClient)
