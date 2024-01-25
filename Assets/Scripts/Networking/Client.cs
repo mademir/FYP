@@ -204,12 +204,9 @@ public class Client : MonoBehaviour
 
         //foreach (COM.Lobby lobby in lobbies) Debug.Log($"{lobby.Name}, {lobby.ID}, {lobby.Full}");
 
-        foreach (COM.Lobby lobby in lobbies) result.Add(lobby as Lobby
-            /*new Lobby(
-            lobby.Name,
-            lobby.ID, 
-            lobby.Full
-            )*/);
+        foreach (COM.Lobby lobby in lobbies) result.Add(new Lobby(lobby));
+
+        Debug.Log($"Received {result.Count} lobbies.");
 
         gameController.UpdateLobbyList(result);
     }

@@ -15,6 +15,15 @@ namespace Networking
             ID = rnd.Next(10000, 99999).ToString();
         }
 
+        public Lobby(COM.Lobby lobby)
+        {
+            Name= lobby.Name;
+            PlayerA = lobby.PlayerA;
+            PlayerB = lobby.PlayerB;
+            Full = lobby.Full;
+            ID = lobby.ID;
+        }
+
         internal void AddPlayerB(Client Client)
         {
             PlayerB = Client;

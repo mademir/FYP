@@ -117,6 +117,9 @@ namespace Networking {
                 case "JOIN":
                     JoinLobby(data, tcpClient);
                     break;
+                case "PING":
+                    SendTCPMessage("PONG", tcpClient);
+                    break;
                 default:
                     Console.WriteLine($"Unknown command: {command}");
                     break;
@@ -128,7 +131,7 @@ namespace Networking {
             lock (lobbiesLock)
             {
                 //string response = "LIST" + JsonSerializer.Serialize(lobbies.Select(lobby => lobby.Name).ToList());
-                var jsonLobbies = lobbies.Select(x => x as COM.Lobby);
+                var jsonLobbies = lobbies.Select(x => x as COM.Lobby).ToList();
                 string response = "LIST" + JsonSerializer.Serialize(jsonLobbies);
 
                 SendTCPMessage(response, tcpClient);
@@ -154,9 +157,14 @@ namespace Networking {
 
                     //var player = new Client(lobbyInfo.Player.Name, clientIP, true);
                     //player.ID = lobbyInfo.Player.ID;
-                    var player = lobbyInfo.Player as Client;
+
+                    /*var player = lobbyInfo.Player as Client;
                     player.IP = clientIP;
+                    var lobby = new Lobby(lobbyInfo.LobbyName, player);*/
+
+                    var player = new Client(lobbyInfo.Player, clientIP);
                     var lobby = new Lobby(lobbyInfo.LobbyName, player);
+
                     lobbies.Add(lobby);
                     Console.WriteLine($"Lobby '{lobbyInfo.LobbyName}' created by '{lobbyInfo.Player.Name}'.");
 

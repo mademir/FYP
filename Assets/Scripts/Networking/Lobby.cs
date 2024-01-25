@@ -13,5 +13,14 @@
         Full = full;
     }*/
 
+    public Lobby(COM.Lobby lobby)
+    {
+        Name = lobby.Name;
+        ID = lobby.ID;
+        Full = lobby.Full;
+        PlayerA = lobby.PlayerA;
+        PlayerB = lobby.PlayerB;
+    }
+
     //Put Lobby info that should be available on client side but doesn't need to be on server here
 }
