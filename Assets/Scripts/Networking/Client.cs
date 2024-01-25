@@ -14,15 +14,22 @@ public class Client : MonoBehaviour
     public string IP = "127.0.0.1";
     TcpClient tcpClient;
     UdpClient udpClient;
-    public int tcpBufferSize = 256;
+    int tcpBufferSize = 512; //Put in com?
     public int tcpPort = 1025;
     public int udpPort = 1026;
 
     public bool hosting = false;
-    public string playerName = "";
+    public string plyrName = "";
     public bool send = false;
     public bool crea = false;
     public string msg = "";
+
+    public GameController gameController;
+
+    public string MyClientID;
+
+    //DateTime lastPackageReceiveTime;
+    //double ConnectionTimeout = 5.0;
 
     /* TODO:
      * Lobby communication. Receive Pair info (IP) and if hosting or not.
@@ -32,16 +39,10 @@ public class Client : MonoBehaviour
 
     private void Start()
     {
+        System.Random rnd = new System.Random();
+        MyClientID = rnd.Next(10000, 99999).ToString();
 
-        try
-        {
-            tcpClient = new TcpClient(IP, tcpPort);
-            Debug.Log($"Connected to TCP server at {IP}:{tcpPort}");
-        }
-        catch (Exception e)
-        {
-            Debug.Log("TCP Connection Error: " + e.Message);
-        }
+        ConnectToTCPServer();
 
         new Thread(() => ReceiveTCPMessage()).Start();
         
@@ -60,6 +61,9 @@ public class Client : MonoBehaviour
 
     private void Update()
     {
+        //if ((DateTime.Now - lastPackageReceiveTime).TotalSeconds > ConnectionTimeout) { }
+
+
         if (send)
         {
             send = false;
@@ -69,71 +73,13 @@ public class Client : MonoBehaviour
         if (crea)
         {
             crea = false;
-            var lobbyInfo = new COM.CreateLobbyInfo(msg, playerName);
+            COM.Client player = new Player(plyrName, MyClientID);
+            var lobbyInfo = new COM.CreateLobbyInfo(msg, player);
             string jsonLobbyInfo = JsonConvert.SerializeObject(lobbyInfo);
             new Thread(() => SendTCPMessage("CREA" + jsonLobbyInfo)).Start();
         }
     }
 
-
-    void StartTCPServer(int port)
-    {
-        TcpListener tcpListener = null;
-        TcpClient tcpClient = null;
-
-        try
-        {
-            tcpListener = new TcpListener(IPAddress.Parse(IP), port);
-            tcpListener.Start();
-
-            Console.WriteLine($"TCP Server listening on port {port}...");
-
-            while (true)
-            {
-                tcpClient = tcpListener.AcceptTcpClient();
-
-                // Create a new thread to handle the TCP client
-                Thread clientThread = new Thread(() => HandleTCPClient(tcpClient));
-                clientThread.Start();
-            }
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine("TCP Error: " + e.Message);
-        }
-        finally
-        {
-            tcpListener?.Stop();
-        }
-    }
-
-    void HandleTCPClient(TcpClient tcpClient)
-    {
-        try
-        {
-            string message = "";
-            while (message != "exit")
-            {
-                NetworkStream networkStream = tcpClient.GetStream();
-                byte[] data = new byte[tcpBufferSize];
-
-                int bytesRead = networkStream.Read(data, 0, data.Length);
-                message = Encoding.ASCII.GetString(data, 0, bytesRead);
-                Console.WriteLine($"TCP Received: {message}");
-
-                // Send a response back to the client.
-                byte[] response = Encoding.ASCII.GetBytes($"You sent: {message}");
-                networkStream.Write(response, 0, response.Length);
-            }
-
-            // Close the connection.
-            tcpClient.Close();
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine("TCP Error: " + e.Message);
-        }
-    }
     static void StartUDPServer(int port)
     {
         UdpClient udpListener = null;
@@ -167,16 +113,20 @@ public class Client : MonoBehaviour
         }
     }
 
-    public void ConnectToTCPServer(string ipAddress, int port)
+    public void ConnectToTCPServer()
     {
+        string ipAddress = IP;
+        int port = tcpPort;
         try
         {
             tcpClient = new TcpClient(ipAddress, port);
             Debug.Log($"Connected to TCP server at {ipAddress}:{port}");
+            gameController.ShowConnectionLost(false);
         }
         catch (Exception e)
         {
             Debug.Log("TCP Connection Error: " + e.Message);
+            gameController.ShowConnectionLost(true);
         }
     }
 
@@ -188,10 +138,12 @@ public class Client : MonoBehaviour
             byte[] data = Encoding.ASCII.GetBytes(message);
             networkStream.Write(data, 0, data.Length);
             Debug.Log($"TCP Sent: {message}");
+            gameController.ShowConnectionLost(false);
         }
         catch (Exception e)
         {
             Debug.Log("TCP Send Error: " + e.Message);
+            gameController.ShowConnectionLost(true);
         }
     }
 
@@ -205,6 +157,8 @@ public class Client : MonoBehaviour
             {
                 byte[] data = new byte[tcpBufferSize];
                 int bytesRead = networkStream.Read(data, 0, data.Length);
+                //lastPackageReceiveTime = DateTime.Now;
+                gameController.ShowConnectionLost(false);
                 string receivedMessage = Encoding.ASCII.GetString(data, 0, bytesRead);
                 HandleTCPMessage(receivedMessage);
             }
@@ -212,6 +166,7 @@ public class Client : MonoBehaviour
         catch (Exception e)
         {
             Debug.Log("TCP Receive Error: " + e.Message);
+            gameController.ShowConnectionLost(true);
         }
     }
 
@@ -232,6 +187,9 @@ public class Client : MonoBehaviour
             case "LIST":
                 ReceiveLobbyList(data);
                 break;
+            case "JOIN":
+                ReceiveJoinLobbyConf(data);
+                break;
             default:
                 Console.WriteLine($"Unknown command: {command}");
                 break;
@@ -240,9 +198,26 @@ public class Client : MonoBehaviour
 
     private void ReceiveLobbyList(string data)
     {
-        //List<string> lobbies = JsonConvert.DeserializeObject<List<string>>(data);
+        var result = new List<Lobby>();
 
-        //foreach (string lobby in lobbies) Debug.Log(lobby);
+        List<COM.Lobby> lobbies = JsonConvert.DeserializeObject<List<COM.Lobby>>(data);
+
+        //foreach (COM.Lobby lobby in lobbies) Debug.Log($"{lobby.Name}, {lobby.ID}, {lobby.Full}");
+
+        foreach (COM.Lobby lobby in lobbies) result.Add(lobby as Lobby
+            /*new Lobby(
+            lobby.Name,
+            lobby.ID, 
+            lobby.Full
+            )*/);
+
+        gameController.UpdateLobbyList(result);
+    }
+
+    private void ReceiveJoinLobbyConf(string data)
+    {
+        var lobby = JsonConvert.DeserializeObject<COM.Lobby>(data) as Lobby;
+        gameController.JoinLobby(lobby);
     }
 
     public void SendUDPMessage(string message, string ipAddress, int port)
@@ -277,6 +252,35 @@ public class Client : MonoBehaviour
     }
 
 
+    public void CheckConnection()
+    {
+        if (tcpClient != null)
+        {
+            SendTCPMessage("PING");
+            if (!tcpClient.Connected) ConnectToTCPServer();
+        }
+    }
+    internal void Disconnect()
+    {
+        tcpClient?.Close();
+    }
+
+    public void ReqListLobbies()
+    {
+        new Thread(() => SendTCPMessage("LIST")).Start();
+    }
+
+    internal void ReqJoinLobby(string lobbyID, Player player)
+    {
+        string jsonJoinLobbyInfo = JsonConvert.SerializeObject(new COM.JoinLobbyInfo(lobbyID, player));
+
+        new Thread(() => SendTCPMessage("JOIN" + jsonJoinLobbyInfo)).Start();
+    }
+
+    internal void ReqLeaveLobby()
+    {
+        throw new NotImplementedException();
+    }
 
 
 

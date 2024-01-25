@@ -1,0 +1,13 @@
+C:\Users\Mustafa\Desktop\Laptop\Projects\Unity\FYP\COM\bin\Debug\netstandard2.1\COM.deps.json
+C:\Users\Mustafa\Desktop\Laptop\Projects\Unity\FYP\COM\bin\Debug\netstandard2.1\COM.dll
+C:\Users\Mustafa\Desktop\Laptop\Projects\Unity\FYP\COM\bin\Debug\netstandard2.1\COM.pdb
+C:\Users\Mustafa\Desktop\Laptop\Projects\Unity\FYP\COM\obj\Debug\netstandard2.1\COM.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Mustafa\Desktop\Laptop\Projects\Unity\FYP\COM\obj\Debug\netstandard2.1\COM.AssemblyInfoInputs.cache
+C:\Users\Mustafa\Desktop\Laptop\Projects\Unity\FYP\COM\obj\Debug\netstandard2.1\COM.AssemblyInfo.cs
+C:\Users\Mustafa\Desktop\Laptop\Projects\Unity\FYP\COM\obj\Debug\netstandard2.1\COM.csproj.CoreCompileInputs.cache
+C:\Users\Mustafa\Desktop\Laptop\Projects\Unity\FYP\COM\obj\Debug\netstandard2.1\COM.sourcelink.json
+C:\Users\Mustafa\Desktop\Laptop\Projects\Unity\FYP\COM\obj\Debug\netstandard2.1\COM.dll
+C:\Users\Mustafa\Desktop\Laptop\Projects\Unity\FYP\COM\obj\Debug\netstandard2.1\COM.pdb
+C:\Users\Mustafa\Desktop\Laptop\Projects\Unity\FYP\Assets\Scripts\Networking\COM\Debug\netstandard2.1\COM.deps.json
+C:\Users\Mustafa\Desktop\Laptop\Projects\Unity\FYP\Assets\Scripts\Networking\COM\Debug\netstandard2.1\COM.dll
+C:\Users\Mustafa\Desktop\Laptop\Projects\Unity\FYP\Assets\Scripts\Networking\COM\Debug\netstandard2.1\COM.pdb

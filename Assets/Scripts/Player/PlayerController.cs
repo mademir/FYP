@@ -15,10 +15,15 @@ public class PlayerController : MonoBehaviour
     public float sensitivity = 2.0f;
     private float verticalRotation = 0f;
     private float verticalRotationLimit = -80f;
-    public bool canMove = true;
+    public bool canMove = false;
 
     public Transform spawn;
 
+    public void LockCursor(bool state)
+    {
+        Cursor.lockState = state? CursorLockMode.Locked : CursorLockMode.None;
+        Cursor.visible = !state;
+    }
 
     // Start is called before the first frame update
     void Start()
@@ -30,10 +35,8 @@ public class PlayerController : MonoBehaviour
         Application.targetFrameRate = 60;   // Set frame rate
 #endif
 
-        // Lock the cursor
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
         //////
+
 
         rb = GetComponent<Rigidbody>();
     }

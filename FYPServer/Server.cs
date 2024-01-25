@@ -1,3 +1,4 @@
+using COM;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
@@ -9,7 +10,7 @@ namespace Networking {
     {
         static object lobbiesLock = new object();
         static List<Lobby> lobbies = new List<Lobby>();
-        static int TCPTicks = 10;
+        //static int TCPTicks = 10;
 
         //TODO: Implement ticks for the server and tcp handler loops
 
@@ -89,6 +90,11 @@ namespace Networking {
                 Console.WriteLine("TCP Error: " + e.Message);
             }
         }
+        static void SendTCPMessage(string message, TcpClient tcpClient)
+        {
+            byte[] responseData = Encoding.ASCII.GetBytes(message);
+            tcpClient.GetStream().Write(responseData, 0, responseData.Length);
+        }
 
         private static void ParseTCPRequest(string request, TcpClient tcpClient)
         {
@@ -117,18 +123,15 @@ namespace Networking {
             }
         }
 
-
-        //TODO: Implement these 3 methods. Make a lobby class. Use json formatting to transmit lobby list
-
         static void SendLobbyList(TcpClient tcpClient)
         {
             lock (lobbiesLock)
             {
                 //string response = "LIST" + JsonSerializer.Serialize(lobbies.Select(lobby => lobby.Name).ToList());
-                string response = "LIST" + JsonSerializer.Serialize(lobbies);
+                var jsonLobbies = lobbies.Select(x => x as COM.Lobby);
+                string response = "LIST" + JsonSerializer.Serialize(jsonLobbies);
 
-                byte[] responseData = Encoding.ASCII.GetBytes(response.ToString());
-                tcpClient.GetStream().Write(responseData, 0, responseData.Length);
+                SendTCPMessage(response, tcpClient);
             }
         }
 
@@ -144,8 +147,22 @@ namespace Networking {
                 {
                     string clientIP = tcpClient.Client.RemoteEndPoint != null ? (tcpClient.Client.RemoteEndPoint as IPEndPoint).Address.ToString() : "";
                     Console.WriteLine($"Client IP: {clientIP}");
-                    lobbies.Add(new Lobby(lobbyInfo.LobbyName, new Client(lobbyInfo.PlayerName, clientIP, true)));//GET ACTUAL CLIENT NAME
-                    Console.WriteLine($"Lobby '{lobbyInfo.LobbyName}' created by '{lobbyInfo.PlayerName}'.");
+                    //lobbies.Add(new Lobby(lobbyInfo.LobbyName, new Client(lobbyInfo.Player.Name, clientIP, true)));
+                    //var player = lobbyInfo.Player as Client;
+                    //player.IP = clientIP;
+                    //player.LobbyLeader = true;
+
+                    //var player = new Client(lobbyInfo.Player.Name, clientIP, true);
+                    //player.ID = lobbyInfo.Player.ID;
+                    var player = lobbyInfo.Player as Client;
+                    player.IP = clientIP;
+                    var lobby = new Lobby(lobbyInfo.LobbyName, player);
+                    lobbies.Add(lobby);
+                    Console.WriteLine($"Lobby '{lobbyInfo.LobbyName}' created by '{lobbyInfo.Player.Name}'.");
+
+                    // Send confirmation
+
+                    SendJoinLobbyConfirmation(lobby, tcpClient);
                 }
                 else
                 {
@@ -171,9 +188,44 @@ namespace Networking {
             }*/
         }
 
-        static void JoinLobby(string lobbyID, TcpClient tcpClient)
+        static void JoinLobby(string data, TcpClient tcpClient)
         {
+            var lobbyInfo = JsonSerializer.Deserialize<COM.JoinLobbyInfo>(data);
+            if (lobbyInfo == null) return;
+
+            var lobbyID = lobbyInfo.LobbyID;
+            if (lobbyID == "") return;
+
             lock (lobbiesLock)
+            {
+                List<Lobby> lobbies = Server.lobbies.Where(lobby => lobby.ID == lobbyID).ToList();
+
+                if (lobbies.Any())
+                {
+                    var lobby = lobbies[0];
+                    if (lobby.Full)
+                    {
+                        Console.WriteLine($"Lobby '{lobby.Name}' is full.");
+                        return;
+                    }
+
+                    string clientIP = tcpClient.Client.RemoteEndPoint != null ? (tcpClient.Client.RemoteEndPoint as IPEndPoint).Address.ToString() : "";
+                    var player = lobbyInfo.Player as Client;
+                    player.IP = clientIP;
+                    lobby.AddPlayerB(player);
+                    Console.WriteLine($"{lobbyInfo.Player.Name} joined lobby '{lobby.Name}'.");
+
+                    // Send confirmation
+
+                    SendJoinLobbyConfirmation(lobby, tcpClient);
+                }
+                else
+                {
+                    Console.WriteLine($"Lobby '{lobbyID}' does not exist.");
+                }
+            }
+
+            /*lock (lobbiesLock)
             {
                 List<Lobby> lobbies = Server.lobbies.Where(lobby => lobby.ID == lobbyID).ToList();
 
@@ -187,14 +239,20 @@ namespace Networking {
                     }
 
                     string clientIP = tcpClient.Client.RemoteEndPoint != null ? (tcpClient.Client.RemoteEndPoint as IPEndPoint).Address.ToString() : "";
-                    lobby.AddPlayerB(new Client(lobby.Name+"B", clientIP, false));//GET ACTUAL CLIENT NAME
+                    lobby.AddPlayerB(new Client(lobby.Name + "B", clientIP, false));//GET ACTUAL CLIENT NAME
                     Console.WriteLine($"Player joined lobby '{lobby.Name}'.");
                 }
                 else
                 {
                     Console.WriteLine($"Lobby '{lobbyID}' does not exist.");
                 }
-            }
+            }*/
+        }
+
+        private static void SendJoinLobbyConfirmation(Lobby lobby, TcpClient tcpClient)
+        {
+            string jsonJoinLobbyConf = JsonSerializer.Serialize(lobby as COM.Lobby);
+            SendTCPMessage("JOIN" + jsonJoinLobbyConf, tcpClient);
         }
 
 
@@ -242,7 +300,7 @@ namespace Networking {
         }*/
 
         static String IP = "192.168.1.46";//"192.168.1.172";//"127.0.0.1";
-        static int tcpBufferSize = 256;
+        static int tcpBufferSize = 512;
         static int tcpPort = 1025;
         static int udpPort = 1026;
 

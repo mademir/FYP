@@ -1,0 +1,9 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <Nullable>enable</Nullable>
+    <BaseOutputPath>C:\Users\Mustafa\Desktop\Laptop\Projects\Unity\FYP\Assets\Scripts\Networking\COM</BaseOutputPath>
+  </PropertyGroup>
+
+</Project>
