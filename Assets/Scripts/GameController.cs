@@ -43,6 +43,9 @@ public class GameController : MonoBehaviour
     public GameObject LobbyEntryPrefab;
     public Transform LobbyListGO;
 
+    public bool ShowConnectionLost = false;
+    bool tmpShowConnectionLost;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -51,13 +54,20 @@ public class GameController : MonoBehaviour
         LobbiesItems = new List<GameObject> { LobbiesView };
         LobbyItems = new List<GameObject> { LobbyView };
 
+        tmpShowConnectionLost = ShowConnectionLost;
+
         SwitchToMainMenu();
     }
 
     // Update is called once per frame
     void Update()
     {
-        
+        if (ShowConnectionLost != tmpShowConnectionLost)
+        {
+            ConnectionLostMsg.SetActive(ShowConnectionLost);
+            tmpShowConnectionLost = ShowConnectionLost;
+        }
+            
     }
 
     public void onMuteToggle()
@@ -107,8 +117,6 @@ public class GameController : MonoBehaviour
         client?.Disconnect();
         Application.Quit();
     }
-
-    public void ShowConnectionLost(bool show) => ConnectionLostMsg.SetActive(show);
 
     public void UpdateLobbyList(List<Lobby> result)
     {

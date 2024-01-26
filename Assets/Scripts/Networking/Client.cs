@@ -121,12 +121,12 @@ public class Client : MonoBehaviour
         {
             tcpClient = new TcpClient(ipAddress, port);
             Debug.Log($"Connected to TCP server at {ipAddress}:{port}");
-            gameController.ShowConnectionLost(false);
+            gameController.ShowConnectionLost = false;
         }
         catch (Exception e)
         {
             Debug.Log("TCP Connection Error: " + e.Message);
-            gameController.ShowConnectionLost(true);
+            gameController.ShowConnectionLost = true;
         }
     }
 
@@ -138,12 +138,12 @@ public class Client : MonoBehaviour
             byte[] data = Encoding.ASCII.GetBytes(message);
             networkStream.Write(data, 0, data.Length);
             Debug.Log($"TCP Sent: {message}");
-            gameController.ShowConnectionLost(false);
+            gameController.ShowConnectionLost = false;
         }
         catch (Exception e)
         {
             Debug.Log("TCP Send Error: " + e.Message);
-            gameController.ShowConnectionLost(true);
+            gameController.ShowConnectionLost = true;
         }
     }
 
@@ -158,7 +158,7 @@ public class Client : MonoBehaviour
                 byte[] data = new byte[tcpBufferSize];
                 int bytesRead = networkStream.Read(data, 0, data.Length);
                 //lastPackageReceiveTime = DateTime.Now;
-                gameController.ShowConnectionLost(false);
+                gameController.ShowConnectionLost = false;
                 string receivedMessage = Encoding.ASCII.GetString(data, 0, bytesRead);
                 HandleTCPMessage(receivedMessage);
             }
@@ -166,7 +166,7 @@ public class Client : MonoBehaviour
         catch (Exception e)
         {
             Debug.Log("TCP Receive Error: " + e.Message);
-            gameController.ShowConnectionLost(true);
+            gameController.ShowConnectionLost = true;
         }
     }
 
@@ -204,9 +204,17 @@ public class Client : MonoBehaviour
 
         //foreach (COM.Lobby lobby in lobbies) Debug.Log($"{lobby.Name}, {lobby.ID}, {lobby.Full}");
 
-        foreach (COM.Lobby lobby in lobbies) result.Add(new Lobby(lobby));
+        //foreach (COM.Lobby lobby in lobbies) result.Add(new Lobby(lobby));
 
-        Debug.Log($"Received {result.Count} lobbies.");
+        int ct = 0;
+
+        foreach (COM.Lobby lobby in lobbies)
+        {
+            ct++;
+            result.Add(new Lobby(lobby));
+        }
+
+        Debug.Log($"Received {ct} lobbies.");
 
         gameController.UpdateLobbyList(result);
     }
