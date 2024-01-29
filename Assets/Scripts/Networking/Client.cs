@@ -6,17 +6,19 @@ using System.Net;
 using System.Text;
 using UnityEngine;
 using System.Threading;
-using UnityEditor.Experimental.GraphView;
 using Newtonsoft.Json;
+using System.IO;
+using COM;
 
 public class Client : MonoBehaviour
 {
-    public string IP = "127.0.0.1";
+    public string ServerIP = "127.0.0.1";
     TcpClient tcpClient;
     UdpClient udpClient;
-    int tcpBufferSize = 512; //Put in com?
-    public int tcpPort = 1025;
-    public int udpPort = 1026;
+    int tcpBufferSize = 512;
+    public int ServerTcpPort = 1025;
+    public int ServerUdpPort = 1026;
+    internal int LocalUdpPort;
 
     public bool hosting = false;
     public string plyrName = "";
@@ -28,23 +30,31 @@ public class Client : MonoBehaviour
 
     public string MyClientID;
 
+    bool udpStreaming = false;
+    bool sendUdp = false;
+    IPEndPoint serverEP;
+    ClientCOM.TransformInfo UdpTransformInfo;
+
+    bool runOnBackground = true;
+
     //DateTime lastPackageReceiveTime;
     //double ConnectionTimeout = 5.0;
-
-    /* TODO:
-     * Lobby communication. Receive Pair info (IP) and if hosting or not.
-     * After receiving this, load main scene and connect udp to pair GO location etc.
-     */
 
 
     private void Start()
     {
         System.Random rnd = new System.Random();
-        MyClientID = rnd.Next(10000, 99999).ToString();
+        MyClientID = rnd.Next((int)Math.Pow(10, COM.Values.ClientIDLength - 1), (int)Math.Pow(10, COM.Values.ClientIDLength) - 1).ToString();
+
+        // Setup UDP
+        udpClient = new UdpClient(0); // Assign an available local port
+        LocalUdpPort = ((IPEndPoint)udpClient.Client.LocalEndPoint).Port;
+        serverEP = new IPEndPoint(IPAddress.Parse(ServerIP), ServerUdpPort);
 
         ConnectToTCPServer();
 
         new Thread(() => ReceiveTCPMessage()).Start();
+        new Thread(() => ReceiveUDPMessage()).Start();
         
         /*
         // Connect to the TCP server
@@ -59,10 +69,16 @@ public class Client : MonoBehaviour
         ReceiveUDPMessage();*/
     }
 
+    private void OnDestroy()
+    {
+        runOnBackground = false;
+        tcpClient.Dispose();
+        udpClient.Dispose();
+    }
+
     private void Update()
     {
         //if ((DateTime.Now - lastPackageReceiveTime).TotalSeconds > ConnectionTimeout) { }
-
 
         if (send)
         {
@@ -73,10 +89,19 @@ public class Client : MonoBehaviour
         if (crea)
         {
             crea = false;
-            COM.Client player = new Player(plyrName, MyClientID);
+            COM.Client player = new Player(plyrName, MyClientID, LocalUdpPort);
             var lobbyInfo = new COM.CreateLobbyInfo(msg, player);
             string jsonLobbyInfo = JsonConvert.SerializeObject(lobbyInfo);
             new Thread(() => SendTCPMessage("CREA" + jsonLobbyInfo)).Start();
+        }
+    }
+
+    private void FixedUpdate()
+    {
+        if (udpStreaming)
+        {
+            UdpTransformInfo = new ClientCOM.TransformInfo(gameController.PlayerGO.transform);
+            sendUdp = true;
         }
     }
 
@@ -115,12 +140,10 @@ public class Client : MonoBehaviour
 
     public void ConnectToTCPServer()
     {
-        string ipAddress = IP;
-        int port = tcpPort;
         try
         {
-            tcpClient = new TcpClient(ipAddress, port);
-            Debug.Log($"Connected to TCP server at {ipAddress}:{port}");
+            tcpClient = new TcpClient(ServerIP, ServerTcpPort);
+            Debug.Log($"Connected to TCP server at {ServerIP}:{ServerTcpPort}");
             gameController.ShowConnectionLost = false;
         }
         catch (Exception e)
@@ -153,7 +176,7 @@ public class Client : MonoBehaviour
         {
             NetworkStream networkStream = tcpClient.GetStream();
 
-            while (true)
+            while (runOnBackground)
             {
                 byte[] data = new byte[tcpBufferSize];
                 int bytesRead = networkStream.Read(data, 0, data.Length);
@@ -163,10 +186,14 @@ public class Client : MonoBehaviour
                 HandleTCPMessage(receivedMessage);
             }
         }
+        catch (IOException e)
+        {
+            Debug.Log("TCP Receive IO Error: " + e.Message);
+            gameController.ShowConnectionLost = true;
+        }
         catch (Exception e)
         {
-            Debug.Log("TCP Receive Error: " + e.Message);
-            gameController.ShowConnectionLost = true;
+            Debug.LogException(e);
         }
     }
 
@@ -190,6 +217,9 @@ public class Client : MonoBehaviour
             case "JOIN":
                 ReceiveJoinLobbyConf(data);
                 break;
+            case "LOUP":
+                ReceiveLobbyUpdate(data);
+                break;
             default:
                 Console.WriteLine($"Unknown command: {command}");
                 break;
@@ -204,33 +234,73 @@ public class Client : MonoBehaviour
 
         //foreach (COM.Lobby lobby in lobbies) Debug.Log($"{lobby.Name}, {lobby.ID}, {lobby.Full}");
 
-        //foreach (COM.Lobby lobby in lobbies) result.Add(new Lobby(lobby));
+        foreach (COM.Lobby lobby in lobbies) result.Add(new Lobby(lobby));
 
-        int ct = 0;
+        /*int ct = 0;
 
         foreach (COM.Lobby lobby in lobbies)
         {
             ct++;
             result.Add(new Lobby(lobby));
-        }
+        }*/
 
-        Debug.Log($"Received {ct} lobbies.");
-
-        gameController.UpdateLobbyList(result);
+        //gameController.UpdateLobbyList(result);
+        gameController.ExecuteOnMainThread.Add(() => gameController.UpdateLobbyList(result));
     }
 
     private void ReceiveJoinLobbyConf(string data)
     {
-        var lobby = JsonConvert.DeserializeObject<COM.Lobby>(data) as Lobby;
-        gameController.JoinLobby(lobby);
+        var lobby = new Lobby(JsonConvert.DeserializeObject<COM.Lobby>(data));
+        gameController.ExecuteOnMainThread.Add(() => gameController.JoinLobby(lobby));
     }
 
-    public void SendUDPMessage(string message, string ipAddress, int port)
+    private void ReceiveLobbyUpdate(string data)
+    {
+        var lobby = new Lobby(JsonConvert.DeserializeObject<COM.Lobby>(data));
+        if (gameController.CurrentAppState == GameController.AppState.Lobby)
+        {
+            gameController.lobbyController.MyLobby = lobby;
+
+            if (lobby.CurrentGameState == GameState.InLobby)
+                gameController.ExecuteOnMainThread.Add(() => gameController.lobbyController.UpdateLobby());
+
+            if (lobby.CurrentGameState == GameState.InGame)
+            {
+                Debug.Log("Starting Game..");
+                udpStreaming = true;
+                new Thread(() => StartUdpStream()).Start();
+                gameController.ExecuteOnMainThread.Add(() => gameController.SwitchToGame());
+            }
+
+        }
+    }
+
+    private void StartUdpStream()
+    {
+        var tempTransformInfo = new ClientCOM.TransformInfo();
+
+        while (udpStreaming)
+        {
+            if (sendUdp)
+            {
+                if (!ClientCOM.TransformInfo.Compare(tempTransformInfo, UdpTransformInfo))
+                {
+                    string msg = ClientCOM.Values.TransformTag + UdpTransformInfo.Serialise();
+                    SendUDPMessage(msg);
+
+                    tempTransformInfo = UdpTransformInfo;
+                }
+
+                sendUdp = false;
+            }
+        }
+    }
+
+    public void SendUDPMessage(string message)
     {
         try
         {
-            udpClient = new UdpClient();
-            IPEndPoint serverEP = new IPEndPoint(IPAddress.Parse(ipAddress), port);
+            message = MyClientID + message;
             byte[] data = Encoding.ASCII.GetBytes(message);
             udpClient.Send(data, data.Length, serverEP);
             Debug.Log($"UDP Sent: {message}");
@@ -243,19 +313,51 @@ public class Client : MonoBehaviour
 
     public void ReceiveUDPMessage()
     {
-        try
+        Debug.Log($"Starting UDP Listener on port: {LocalUdpPort}");
+        while (runOnBackground)
         {
-            IPEndPoint remoteEP = new IPEndPoint(IPAddress.Any, 0);
-            byte[] data = udpClient.Receive(ref remoteEP);
-            string receivedMessage = Encoding.ASCII.GetString(data);
-            Debug.Log($"UDP Received: {receivedMessage}");
-        }
-        catch (Exception e)
-        {
-            Debug.Log("UDP Receive Error: " + e.Message);
+            try
+            {
+                IPEndPoint remoteEP = new IPEndPoint(IPAddress.Any, 0);
+                byte[] data = udpClient.Receive(ref remoteEP);
+                string receivedMessage = Encoding.ASCII.GetString(data);
+                Debug.Log($"UDP Received: {receivedMessage}");
+                ParseUdpMessage(receivedMessage);
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
         }
     }
 
+    private void ParseUdpMessage(string msg)
+    {
+        if (msg.Length < ClientCOM.Values.TagLength)
+        {
+            Console.WriteLine($"Unknown command: {msg}");
+            return;
+        }
+        string command = msg.Substring(0, ClientCOM.Values.TagLength);
+        string data = msg.Substring(ClientCOM.Values.TagLength);
+
+        switch (command)
+        {
+            case ClientCOM.Values.TransformTag:
+                SetPeerTransform(data);
+                break;
+            default:
+                Console.WriteLine($"Unknown command: {command}");
+                break;
+        };
+    }
+
+    private void SetPeerTransform(string data)
+    {
+        var trans = new ClientCOM.TransformInfo(data);
+        gameController.ExecuteOnMainThread.Add(() => gameController.PeerGO.transform.position = trans.Position);
+        gameController.ExecuteOnMainThread.Add(() => gameController.PeerGO.transform.rotation = trans.Rotation);
+    }
 
     public void CheckConnection()
     {
@@ -275,16 +377,36 @@ public class Client : MonoBehaviour
         new Thread(() => SendTCPMessage("LIST")).Start();
     }
 
+    public void ReqCreateLobby()
+    {
+        var player = gameController.MyPlayer;
+        if (player != null)
+        {
+            var lobbyInfo = new COM.CreateLobbyInfo($"Room of {player.Name}", player);
+            string jsonLobbyInfo = JsonConvert.SerializeObject(lobbyInfo);
+            new Thread(() => SendTCPMessage("CREA" + jsonLobbyInfo)).Start();
+        }
+    }
+
     internal void ReqJoinLobby(string lobbyID, Player player)
     {
-        string jsonJoinLobbyInfo = JsonConvert.SerializeObject(new COM.JoinLobbyInfo(lobbyID, player));
+        string jsonJoinLobbyInfo = JsonConvert.SerializeObject(new COM.JoinLeaveLobbyInfo(lobbyID, player));
 
         new Thread(() => SendTCPMessage("JOIN" + jsonJoinLobbyInfo)).Start();
     }
 
     internal void ReqLeaveLobby()
     {
-        throw new NotImplementedException();
+        string jsonJoinLobbyInfo = JsonConvert.SerializeObject(new COM.JoinLeaveLobbyInfo(gameController.lobbyController.MyLobby.ID, gameController.MyPlayer));
+
+        new Thread(() => SendTCPMessage("LEAV" + jsonJoinLobbyInfo)).Start();
+    }
+
+    public void ReqStartGame()
+    {
+        string jsonStartGameInfo = JsonConvert.SerializeObject(new COM.StartGameInfo(gameController.lobbyController.MyLobby.ID, MyClientID));
+
+        new Thread(() => SendTCPMessage("STRT" + jsonStartGameInfo)).Start();
     }
 
 

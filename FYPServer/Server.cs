@@ -1,15 +1,27 @@
 using COM;
 using System.Diagnostics;
 using System.Net;
+using System.Net.Http;
 using System.Net.Sockets;
+using System.Numerics;
 using System.Text;
 using System.Text.Json;
 
 namespace Networking {
     class Server
     {
+
+        //static String IP = "192.168.1.46";//"192.168.1.172";//"127.0.0.1";
+        static int tcpBufferSize = 512;
+        static int tcpPort = 1025;
+        static int udpPort = 1026;
+
         static object lobbiesLock = new object();
         static List<Lobby> lobbies = new List<Lobby>();
+
+        static Dictionary<string, TcpClient> clients = new Dictionary<string, TcpClient>();
+        static Dictionary<string, IPEndPoint> udpRecipients = new Dictionary<string, IPEndPoint>();
+
         //static int TCPTicks = 10;
 
         //TODO: Implement ticks for the server and tcp handler loops
@@ -19,9 +31,12 @@ namespace Networking {
             IPAddress ServerIP = Dns.GetHostAddresses(Dns.GetHostName())[3];
             Console.WriteLine($"Server IP: {ServerIP}");
 
-            // Open tcp server.
-            // Tcp handler should handle listing, creating and joining lobbies.
+            // Start udp server on a new thread.
 
+            Thread UdpServer = new Thread(() => StartUdpServer());
+            UdpServer.Start();
+
+            // Start tcp server on the main thread.
 
             TcpListener tcpListener = null;
 
@@ -52,23 +67,74 @@ namespace Networking {
             }
         }
 
+        static void StartUdpServer()
+        {
+            UdpClient udpListener = new UdpClient(udpPort);
+            Console.WriteLine($"UDP Server listening on port {udpPort}...");
+
+            while (true)
+            {
+                try
+                {
+                    IPEndPoint remoteEP = new IPEndPoint(IPAddress.Any, 0);
+                    byte[] data = udpListener.Receive(ref remoteEP);
+                    string message = Encoding.ASCII.GetString(data);
+                    Console.WriteLine($"UDP Received: {message}");
+
+                    // Create a new thread to handle the UDP message
+                    //Thread clientThread = new Thread(() => HandleUdpMessage(message, remoteEP));
+
+                    //Get the sender client ID from data and determine the recipient from that.
+                    if (message.Length < COM.Values.ClientIDLength) continue;
+                    string senderClientID = message.Substring(0, COM.Values.ClientIDLength);
+                    var recipient = udpRecipients[senderClientID];
+                    Console.WriteLine($"Sending to recipient on {recipient.Address}:{recipient.Port}");
+
+                    int offset = Encoding.ASCII.GetByteCount(senderClientID);
+                    byte[] response = new byte[data.Length - offset];
+                    Buffer.BlockCopy(data, offset, response, 0, response.Length);
+
+                    //byte[] response = Encoding.ASCII.GetBytes(message.Substring(COM.Values.ClientIDLength));
+
+                    // Send a message to its recipient.
+                    udpListener.Send(response, response.Length, recipient);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("UDP Error: " + e.Message);
+                }
+            }
+            
+            //udpListener?.Close();
+        }
+
+        /*private static void HandleUdpMessage(string message, IPEndPoint remoteEP)
+        {
+            throw new NotImplementedException();
+        }*/
+
         static void HandleTCPClient(TcpClient tcpClient)
         {
-            try
+            string message = "";
+            NetworkStream networkStream = tcpClient.GetStream();
+            /*Stopwatch sw = Stopwatch.StartNew();
+            int ct = 0; */
+            int lastBytesRead = 1;
+
+            while (!message.ToLower().StartsWith("exit"))
             {
-                string message = "";
-                NetworkStream networkStream = tcpClient.GetStream();
-                /*Stopwatch sw = Stopwatch.StartNew();
-                int ct = 0; */
-                while (!message.ToLower().StartsWith("exit"))
+                try
                 {
                     //sw.Restart();
                     byte[] data = new byte[tcpBufferSize];
 
-                    if(!networkStream.DataAvailable) continue;
+                    //if(!networkStream.DataAvailable) continue;
                     int bytesRead = networkStream.Read(data, 0, data.Length);
+                    if (bytesRead == 0 && lastBytesRead == 0) break;    // If last 2 reads have been empty, close the connection
+                    lastBytesRead = bytesRead;
+
                     message = Encoding.ASCII.GetString(data, 0, bytesRead);
-                    Console.WriteLine($"{tcpClient}: {message}");
+                    Console.WriteLine($"{(tcpClient.Client.RemoteEndPoint as IPEndPoint).Address}: {message}");
 
                     ParseTCPRequest(message, tcpClient);
 
@@ -81,14 +147,15 @@ namespace Networking {
                     Console.WriteLine($"T: {timeToWait}\tct: {ct++}");
                     Thread.Sleep(timeToWait);*/
                 }
+                catch (Exception e)
+                {
+                    Console.WriteLine("TCP Error: " + e.Message);
+                }
+            }
+                
 
-                // Close the connection.
-                tcpClient.Close();
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("TCP Error: " + e.Message);
-            }
+            // Close the connection.
+            tcpClient?.Close();
         }
         static void SendTCPMessage(string message, TcpClient tcpClient)
         {
@@ -108,6 +175,9 @@ namespace Networking {
 
             switch (command)
             {
+                case "PING":
+                    SendTCPMessage("PONG", tcpClient);
+                    break;
                 case "LIST":
                     SendLobbyList(tcpClient);
                     break;
@@ -117,8 +187,11 @@ namespace Networking {
                 case "JOIN":
                     JoinLobby(data, tcpClient);
                     break;
-                case "PING":
-                    SendTCPMessage("PONG", tcpClient);
+                case "LEAV":
+                    LeaveLobby(data, tcpClient);
+                    break;
+                case "STRT":
+                    StartLobby(data, tcpClient);
                     break;
                 default:
                     Console.WriteLine($"Unknown command: {command}");
@@ -149,21 +222,11 @@ namespace Networking {
                 if (lobbies.Where(lobby => lobby.Name == lobbyInfo.LobbyName).Count() == 0)
                 {
                     string clientIP = tcpClient.Client.RemoteEndPoint != null ? (tcpClient.Client.RemoteEndPoint as IPEndPoint).Address.ToString() : "";
-                    Console.WriteLine($"Client IP: {clientIP}");
-                    //lobbies.Add(new Lobby(lobbyInfo.LobbyName, new Client(lobbyInfo.Player.Name, clientIP, true)));
-                    //var player = lobbyInfo.Player as Client;
-                    //player.IP = clientIP;
-                    //player.LobbyLeader = true;
-
-                    //var player = new Client(lobbyInfo.Player.Name, clientIP, true);
-                    //player.ID = lobbyInfo.Player.ID;
-
-                    /*var player = lobbyInfo.Player as Client;
-                    player.IP = clientIP;
-                    var lobby = new Lobby(lobbyInfo.LobbyName, player);*/
 
                     var player = new Client(lobbyInfo.Player, clientIP);
                     var lobby = new Lobby(lobbyInfo.LobbyName, player);
+
+                    AddClient(player.ID, tcpClient);
 
                     lobbies.Add(lobby);
                     Console.WriteLine($"Lobby '{lobbyInfo.LobbyName}' created by '{lobbyInfo.Player.Name}'.");
@@ -196,9 +259,21 @@ namespace Networking {
             }*/
         }
 
+        private static void AddClient(string id, TcpClient tcpClient)
+        {
+            if (!clients.ContainsKey(id)) clients.Add(id, tcpClient);
+            
+            /*if (clients.ContainsKey(id))
+            {
+                clients[id]?.Dispose();
+                clients[id] = tcpClient;
+            }
+            else clients.Add(id, tcpClient);*/
+        }
+
         static void JoinLobby(string data, TcpClient tcpClient)
         {
-            var lobbyInfo = JsonSerializer.Deserialize<COM.JoinLobbyInfo>(data);
+            var lobbyInfo = JsonSerializer.Deserialize<COM.JoinLeaveLobbyInfo>(data);
             if (lobbyInfo == null) return;
 
             var lobbyID = lobbyInfo.LobbyID;
@@ -218,13 +293,15 @@ namespace Networking {
                     }
 
                     string clientIP = tcpClient.Client.RemoteEndPoint != null ? (tcpClient.Client.RemoteEndPoint as IPEndPoint).Address.ToString() : "";
-                    var player = lobbyInfo.Player as Client;
-                    player.IP = clientIP;
+                    var player = new Client(lobbyInfo.Player, clientIP);
+
+                    AddClient(player.ID, tcpClient);
+
                     lobby.AddPlayerB(player);
                     Console.WriteLine($"{lobbyInfo.Player.Name} joined lobby '{lobby.Name}'.");
 
                     // Send confirmation
-
+                    BroadcastLobbyUpdate(lobby);
                     SendJoinLobbyConfirmation(lobby, tcpClient);
                 }
                 else
@@ -255,6 +332,100 @@ namespace Networking {
                     Console.WriteLine($"Lobby '{lobbyID}' does not exist.");
                 }
             }*/
+        }
+
+        private static void LeaveLobby(string data, TcpClient tcpClient)
+        {
+            var lobbyInfo = JsonSerializer.Deserialize<COM.JoinLeaveLobbyInfo>(data);
+            if (lobbyInfo == null) return;
+
+            var lobbyID = lobbyInfo.LobbyID;
+            if (lobbyID == "") return;
+
+            lock (lobbiesLock)
+            {
+                List<Lobby> lobbiesFound = lobbies.Where(lobby => lobby.ID == lobbyID).ToList();
+
+                if (lobbiesFound.Any())
+                {
+                    var lobby = lobbiesFound[0];
+                    lobby.RemovePlayer(new Client(lobbyInfo.Player, ""));
+                    if (lobby.PlayerA == null && lobby.PlayerB == null) lobbies.Remove(lobby);
+
+                    Console.WriteLine($"{lobbyInfo.Player.Name} left lobby '{lobby.Name}'.");
+
+                    // Send confirmation
+                    BroadcastLobbyUpdate(lobby);
+                }
+                else
+                {
+                    Console.WriteLine($"Lobby '{lobbyID}' does not exist.");
+                }
+            }
+        }
+
+        private static void StartLobby(string data, TcpClient tcpClient)
+        {
+            var startGameInfo = JsonSerializer.Deserialize<COM.StartGameInfo>(data);
+            if (startGameInfo == null) return;
+
+            var lobbyID = startGameInfo.LobbyID;
+
+            var lobbiesFound = lobbies.Where(l => l.ID == startGameInfo.LobbyID).ToList();
+
+            if (lobbiesFound.Any())
+            {
+                var lobby = lobbiesFound[0];
+                
+                bool isLeader = false;
+                foreach (var player in new List<COM.Client>() { lobby.PlayerA, lobby.PlayerB })
+                {
+                    if (player.ID == startGameInfo.PlayerID && player.LobbyLeader) isLeader = true;
+                } 
+
+                if (isLeader)
+                {
+                    //add client recipient bind
+                    try
+                    {
+                        // Bind A to B
+                        IPEndPoint remoteEP = new IPEndPoint((clients[lobby.PlayerB.ID].Client.RemoteEndPoint as IPEndPoint).Address, lobby.PlayerB.UdpPort);
+                        udpRecipients.Add(lobby.PlayerA.ID, remoteEP);
+                        // Bind B to A
+                        remoteEP = new IPEndPoint((clients[lobby.PlayerA.ID].Client.RemoteEndPoint as IPEndPoint).Address, lobby.PlayerA.UdpPort);
+                        udpRecipients.Add(lobby.PlayerB.ID, remoteEP);
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine($"Error on UDP binding: {e}");
+                        return;
+                    }
+
+                    Console.WriteLine($"Starting lobby '{lobby.Name}'.");
+
+                    lobby.CurrentGameState = GameState.InGame;
+                    BroadcastLobbyUpdate(lobby);
+                }
+            }
+            else
+            {
+                Console.WriteLine($"Lobby '{lobbyID}' does not exist.");
+            }
+        }
+
+        private static void BroadcastLobbyUpdate(Lobby lobby)
+        {
+            foreach (COM.Client client in new List<COM.Client>() { lobby.PlayerA, lobby.PlayerB })
+            {
+                if (client != null)
+                {
+                    if (clients.ContainsKey(client.ID))
+                    {
+                        string jsonLobby = JsonSerializer.Serialize(lobby as COM.Lobby);
+                        SendTCPMessage("LOUP" + jsonLobby, clients[client.ID]);
+                    }
+                }
+            }
         }
 
         private static void SendJoinLobbyConfirmation(Lobby lobby, TcpClient tcpClient)
@@ -307,11 +478,6 @@ namespace Networking {
             Console.WriteLine($"Server started on port {Port}.");
         }*/
 
-        static String IP = "192.168.1.46";//"192.168.1.172";//"127.0.0.1";
-        static int tcpBufferSize = 512;
-        static int tcpPort = 1025;
-        static int udpPort = 1026;
-
         /*static void Main()
         {
             var uc = new udpCom();
@@ -335,6 +501,9 @@ namespace Networking {
             //Console.ReadLine();
         }*/
 
+        /// ///////////////////////////////////////////////////////////////////////////////////////////
+        
+        /*
         class udpCom
         {
             public enum UDPChannel
@@ -382,7 +551,9 @@ namespace Networking {
                     Console.WriteLine("UDP Receive Error: " + e.Message);
                 }
             }
-        }
+        }*/
+
+        /// ///////////////////////////////////////////////////////////////////////////////////////////
 
 
 
@@ -392,7 +563,7 @@ namespace Networking {
 
 
 
-
+        /*
         static void StartTCPServer(int port)
         {
             TcpListener tcpListener = null;
@@ -455,6 +626,6 @@ namespace Networking {
             {
                 udpListener?.Close();
             }
-        }
+        }*/
     }
 }

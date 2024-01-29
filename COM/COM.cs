@@ -1,5 +1,11 @@
 ﻿namespace COM
 {
+
+    public static class Values
+    {
+        public static int ClientIDLength = 7;
+    }
+
     public class CreateLobbyInfo
     {
         public string LobbyName { get; set; }
@@ -13,56 +19,51 @@
         }
     }
 
-    /*public class CreateLobbyInfo
-    {
-        public string LobbyName { get; set; }
-        public string PlayerName { get; set; }
-
-
-        public CreateLobbyInfo(string lobbyName, string playerName)
-        {
-            LobbyName = lobbyName;
-            PlayerName = playerName;
-        }
-    }*/
-
-    public class JoinLobbyInfo
+    public class JoinLeaveLobbyInfo
     {
         public string LobbyID { get; set; }
         public Client Player { get; set; }
 
-        public JoinLobbyInfo(string lobbyID, Client player)
+        public JoinLeaveLobbyInfo(string lobbyID, Client player)
         {
             LobbyID = lobbyID;
             Player = player;
         }
     }
 
-    /*public class JoinLobbyConf
+    public class StartGameInfo
     {
-        private string LobbyID { get; set; }
+        public string LobbyID { get; set; }
+        public string PlayerID { get; set; }
 
-        public JoinLobbyConf(string lobbyID)
+        public StartGameInfo(string lobbyID, string playerID)
         {
             LobbyID = lobbyID;
+            PlayerID = playerID;
         }
-    }*/
-
-    // Use lobby instead  \/
+    }
 
     public class Client
     {
-        public string Name;
-        public string ID;
-        public bool LobbyLeader = false;
+        public string Name { get; set; }
+        public string ID { get; set; }
+        public int UdpPort { get; set; }
+        public bool LobbyLeader { get; set; } = false;
     }
 
     public class Lobby
     {
         public string Name { get; set; }
         public string ID { get; set; }
-        public Client PlayerA { get; set; }
-        public Client PlayerB { get; set; }
+        public Client? PlayerA { get; set; }
+        public Client? PlayerB { get; set; }
         public bool Full { get; set; }
+        public GameState CurrentGameState { get; set; } = GameState.InLobby;
+    }
+
+    public enum GameState
+    {
+        InLobby,
+        InGame
     }
 }

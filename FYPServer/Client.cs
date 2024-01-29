@@ -11,6 +11,7 @@ namespace Networking
             Name = client.Name;
             ID = client.ID;
             LobbyLeader = client.LobbyLeader;
+            UdpPort = client.UdpPort;
             IP = ip;
         }
     }

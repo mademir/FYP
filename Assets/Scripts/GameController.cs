@@ -3,13 +3,16 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UIElements;
+using UnityEngine.UI;
 
 public class GameController : MonoBehaviour
 {
     public Client client;
     public Player MyPlayer;
+    public GameObject PlayerGO;
+    public GameObject PeerGO;
 
+    public GameObject UI;
     public GameObject MainMenu;
     public GameObject LobbiesView;
     public GameObject LobbyView;
@@ -24,8 +27,6 @@ public class GameController : MonoBehaviour
     public AudioSource AudioPlayer;
     public string MyName { get { return NameField.GetComponentInChildren<TMP_InputField>().text; } }
 
-    public Lobby MyLobby { get; private set; }
-
     List<GameObject> AllItems = new List<GameObject>();
     List<GameObject> MainMenuItems = new List<GameObject>();
     List<GameObject> LobbiesItems = new List<GameObject>();
@@ -38,13 +39,15 @@ public class GameController : MonoBehaviour
         Lobby
     }
 
-    public AppState CurrentAppState;
+    internal AppState CurrentAppState;
 
     public GameObject LobbyEntryPrefab;
     public Transform LobbyListGO;
 
     public bool ShowConnectionLost = false;
     bool tmpShowConnectionLost;
+
+    internal List<Action> ExecuteOnMainThread = new List<Action>();
 
     // Start is called before the first frame update
     void Start()
@@ -67,7 +70,18 @@ public class GameController : MonoBehaviour
             ConnectionLostMsg.SetActive(ShowConnectionLost);
             tmpShowConnectionLost = ShowConnectionLost;
         }
-            
+        
+        foreach (var action in ExecuteOnMainThread) {
+            try
+            {
+                action();
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
+        }
+        ExecuteOnMainThread.Clear();
     }
 
     public void onMuteToggle()
@@ -94,10 +108,10 @@ public class GameController : MonoBehaviour
     {
         if (LobbyView.activeSelf) client.ReqLeaveLobby(); //if exiting lobby, tell cc to call leave lobby
         if (MyName == "") return;
-        MyPlayer = new Player(MyName, client.MyClientID);
+        MyPlayer = new Player(MyName, client.MyClientID, client.LocalUdpPort);
         SetupView(LobbiesItems);
         CurrentAppState = AppState.Lobbies;
-        client.CheckConnection();
+        //client.CheckConnection();
         client.ReqListLobbies();
     }
 
@@ -105,6 +119,12 @@ public class GameController : MonoBehaviour
     {
         SetupView(LobbyItems);
         CurrentAppState = AppState.Lobby;
+    }
+
+    internal void SwitchToGame()
+    {
+        UI.SetActive(false);
+        PlayerGO.GetComponent<PlayerController>().canMove = true;
     }
 
     private void OnApplicationQuit()
@@ -139,27 +159,17 @@ public class GameController : MonoBehaviour
                 entry.transform.Find("id").GetComponent<TextMeshProUGUI>().text = "ID: " + lobby.ID;
 
                 entry.transform.Find("capacity").GetComponent<TextMeshProUGUI>().text = lobby.Full ? "2/2" : "1/2";
-                entry.transform.Find("capacity").GetComponent<TextMeshProUGUI>().color = lobby.Full ? Color.green : Color.red;
+                entry.transform.Find("capacity").GetComponent<TextMeshProUGUI>().color = lobby.Full ? Color.red : Color.green;
 
-                entry.GetComponentInChildren<Button>().clicked += (() => client.ReqJoinLobby(lobby.ID, MyPlayer));
+                entry.GetComponentInChildren<Button>().onClick.AddListener(() => client.ReqJoinLobby(lobby.ID, MyPlayer));//.clicked += (() => client.ReqJoinLobby(lobby.ID, MyPlayer));
             }
         }
     }
 
     public void JoinLobby(Lobby lobby)
     {
-        MyLobby = lobby;
+        lobbyController.MyLobby = lobby;
         SwitchToLobby();
-        UpdateLobby();
-    }
-
-    public void UpdateLobby()
-    {
-        throw new NotImplementedException();
-    }
-
-    public void CreateLobby()
-    {
-        throw new NotImplementedException();
+        lobbyController.UpdateLobby();
     }
 }
