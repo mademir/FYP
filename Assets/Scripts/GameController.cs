@@ -11,6 +11,8 @@ public class GameController : MonoBehaviour
     public Player MyPlayer;
     public GameObject PlayerGO;
     public GameObject PeerGO;
+    public GameObject SpawnA;
+    public GameObject SpawnB;
 
     public GameObject UI;
     public GameObject MainMenu;
@@ -171,5 +173,11 @@ public class GameController : MonoBehaviour
         lobbyController.MyLobby = lobby;
         SwitchToLobby();
         lobbyController.UpdateLobby();
+    }
+
+    public void Teleport(GameObject gameObject, Transform target)
+    {
+        gameObject.transform.position = target.position;
+        gameObject.transform.rotation = target.rotation;
     }
 }

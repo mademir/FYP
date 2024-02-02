@@ -267,6 +267,9 @@ public class Client : MonoBehaviour
             if (lobby.CurrentGameState == GameState.InGame)
             {
                 Debug.Log("Starting Game..");
+                gameController.ExecuteOnMainThread.Add(() => gameController.PeerGO.SetActive(true));
+                if (MyClientID == lobby.PlayerA.ID) gameController.ExecuteOnMainThread.Add(() => gameController.Teleport(gameController.PlayerGO, gameController.SpawnA.transform));
+                if (MyClientID == lobby.PlayerB.ID) gameController.ExecuteOnMainThread.Add(() => gameController.Teleport(gameController.PlayerGO, gameController.SpawnB.transform));
                 udpStreaming = true;
                 new Thread(() => StartUdpStream()).Start();
                 gameController.ExecuteOnMainThread.Add(() => gameController.SwitchToGame());
