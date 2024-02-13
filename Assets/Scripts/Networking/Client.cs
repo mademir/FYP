@@ -27,6 +27,7 @@ public class Client : MonoBehaviour
     public string msg = "";
 
     public GameController gameController;
+    public VoiceChat VoiceChat;
 
     public string MyClientID;
 
@@ -348,6 +349,9 @@ public class Client : MonoBehaviour
         {
             case ClientCOM.Values.TransformTag:
                 SetPeerTransform(data);
+                break;
+            case ClientCOM.Values.VoiceTag:
+                VoiceChat.VoiceData.Push(data);
                 break;
             default:
                 Console.WriteLine($"Unknown command: {command}");

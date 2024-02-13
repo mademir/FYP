@@ -8,6 +8,7 @@ namespace ClientCOM
     {
         public const int TagLength = 5;
         public const string TransformTag = "TRANS";
+        public const string VoiceTag = "VOICE";
     }
     public class TransformInfo
     {
@@ -45,6 +46,18 @@ namespace ClientCOM
             float minPosDiff = 0.001f;
             float minRotDiff = 0.001f;
             return (Mathf.Abs(Vector3.Distance(info1.Position, info2.Position)) < minPosDiff) && (Mathf.Abs(Quaternion.Angle(info1.Rotation, info2.Rotation)) < minRotDiff);
+        }
+    }
+
+    public class VoiceInfo
+    {
+        public byte[] Data;
+        public int Channels;
+
+        public VoiceInfo(byte[] data, int channels)
+        {
+            Data = data;
+            Channels = channels;
         }
     }
 }
