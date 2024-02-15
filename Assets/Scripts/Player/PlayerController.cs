@@ -15,7 +15,7 @@ public class PlayerController : MonoBehaviour
     public float sensitivity = 2.0f;
     private float verticalRotation = 0f;
     private float verticalRotationLimit = -80f;
-    internal bool canMove = false;
+    public bool canMove = false;
 
     public Transform spawn;
 
