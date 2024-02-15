@@ -29,6 +29,9 @@ public class GameController : MonoBehaviour
     public AudioSource AudioPlayer;
     public string MyName { get { return NameField.GetComponentInChildren<TMP_InputField>().text; } }
 
+    public Material PlayerAMaterial;
+    public Material PlayerBMaterial;
+
     List<GameObject> AllItems = new List<GameObject>();
     List<GameObject> MainMenuItems = new List<GameObject>();
     List<GameObject> LobbiesItems = new List<GameObject>();

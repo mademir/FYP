@@ -270,7 +270,11 @@ public class Client : MonoBehaviour
                 Debug.Log("Starting Game..");
                 gameController.ExecuteOnMainThread.Add(() => gameController.PeerGO.SetActive(true));
                 if (MyClientID == lobby.PlayerA.ID) gameController.ExecuteOnMainThread.Add(() => gameController.Teleport(gameController.PlayerGO, gameController.SpawnA.transform));
-                if (MyClientID == lobby.PlayerB.ID) gameController.ExecuteOnMainThread.Add(() => gameController.Teleport(gameController.PlayerGO, gameController.SpawnB.transform));
+                if (MyClientID == lobby.PlayerB.ID) gameController.ExecuteOnMainThread.Add(() => {
+                    gameController.Teleport(gameController.PlayerGO, gameController.SpawnB.transform);
+                    gameController.PlayerGO.GetComponent<Renderer>().material = gameController.PlayerBMaterial;
+                    gameController.PeerGO.GetComponent<Renderer>().material = gameController.PlayerAMaterial;
+                });
                 udpStreaming = true;
                 new Thread(() => StartUdpStream()).Start();
                 gameController.ExecuteOnMainThread.Add(() => gameController.SwitchToGame());
