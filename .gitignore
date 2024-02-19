@@ -74,6 +74,11 @@ crashlytics-build.properties
 # VS Builds
 /[Bb]in/
 FYPServer/[Oo]bj/
+COM/[Oo]bj/
+FYPServer/[Bb]in/
+
+# Probuilder Settings
+ProjectSettings/Packages/com.unity.probuilder/Settings.json
 
 # Zips
 *.zip
