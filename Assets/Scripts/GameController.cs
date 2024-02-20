@@ -26,6 +26,8 @@ public class GameController : MonoBehaviour
 
     public LobbyController lobbyController;
 
+    public PressurePlatePuzzleController PressurePlatePuzzle;
+
     public AudioSource AudioPlayer;
     public string MyName { get { return NameField.GetComponentInChildren<TMP_InputField>().text; } }
 

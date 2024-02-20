@@ -278,6 +278,7 @@ public class Client : MonoBehaviour
                 udpStreaming = true;
                 new Thread(() => StartUdpStream()).Start();
                 gameController.ExecuteOnMainThread.Add(() => gameController.SwitchToGame());
+                if (MyClientID == lobby.PlayerA.ID) gameController.ExecuteOnMainThread.Add(() => gameController.PressurePlatePuzzle.SetupPuzzle()); // Only let Player A setup the puzzle
             }
 
         }

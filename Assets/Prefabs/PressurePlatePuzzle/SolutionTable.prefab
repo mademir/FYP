@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 6376223025881936109}
   - component: {fileID: 6765472342207023384}
   - component: {fileID: 3274458596772986798}
+  - component: {fileID: 8792859621983236874}
   m_Layer: 0
   m_Name: SolutionTable
   m_TagString: Untagged
@@ -1698,6 +1699,24 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 0}
+--- !u!114 &8792859621983236874
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1506940978597835015}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 52da6b1ed47557d40864b3f9343d11a7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  SolutionTable: {fileID: 3066828237694815337}
+  Symbols:
+  - {fileID: 7728962034785784904}
+  - {fileID: 7775079971758986110}
+  - {fileID: 1910089904969064894}
+  - {fileID: 8289595504620108888}
 --- !u!1 &1910089904969064894
 GameObject:
   m_ObjectHideFlags: 0
@@ -1711,7 +1730,7 @@ GameObject:
   - component: {fileID: 3386292774614085216}
   - component: {fileID: 8638663570688108980}
   m_Layer: 0
-  m_Name: Symbol1
+  m_Name: Symbol3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1809,7 +1828,7 @@ GameObject:
   - component: {fileID: 3066828237694815343}
   - component: {fileID: 3066828237694815336}
   m_Layer: 0
-  m_Name: Solution1
+  m_Name: Solution
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1858,7 +1877,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 15280808fd1074047b9dc27fc38f90aa, type: 2}
+  - {fileID: 2100000, guid: 9870d39c4f320254da0c8d890cf59a2b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1909,7 +1928,7 @@ GameObject:
   - component: {fileID: 6849622456771374332}
   - component: {fileID: 8256844027904785109}
   m_Layer: 0
-  m_Name: SymbolStone (2)
+  m_Name: SymbolStone3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2254,7 +2273,7 @@ GameObject:
   - component: {fileID: 3344518629351366204}
   - component: {fileID: 284449472876808213}
   m_Layer: 0
-  m_Name: SymbolStone (1)
+  m_Name: SymbolStone2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2944,7 +2963,7 @@ GameObject:
   - component: {fileID: 3928881341677351194}
   - component: {fileID: 1954206492230035251}
   m_Layer: 0
-  m_Name: SymbolStone (3)
+  m_Name: SymbolStone4
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3385,7 +3404,7 @@ GameObject:
   - component: {fileID: 6888860336126385312}
   - component: {fileID: 470080885748112244}
   m_Layer: 0
-  m_Name: Symbol1
+  m_Name: Symbol2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3483,7 +3502,7 @@ GameObject:
   - component: {fileID: 5149312847530685318}
   - component: {fileID: 2191631417166476370}
   m_Layer: 0
-  m_Name: Symbol1
+  m_Name: Symbol4
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
