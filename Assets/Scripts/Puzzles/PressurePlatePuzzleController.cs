@@ -3,6 +3,7 @@ using UnityEngine;
 
 public class PressurePlatePuzzleController : MonoBehaviour
 {
+    public Client client;
     public int[,] path;
     public List<int[,]> paths;
     public List<GameObject> SolutionTables = new List<GameObject>();
@@ -121,28 +122,26 @@ public class PressurePlatePuzzleController : MonoBehaviour
             var tableScript = table.GetComponent<PressurePlateSolutionTable>();
 
             int ind = Random.Range(0, i);
-            tableScript.SolutionTable.GetComponent<Renderer>().material = SolutionMaterials[paths.IndexOf(tempPaths[ind])];
+            //tableScript.SolutionTable.GetComponent<Renderer>().material = SolutionMaterials[paths.IndexOf(tempPaths[ind])];/////////////////////////
+            tableScript.SolutionTable.GetComponent<NetworkNode>().SetMaterial($"Pressure Plate/Materials/Solution{paths.IndexOf(tempPaths[ind]) + 1}", client);
             if (tempPaths[ind] == paths[correctPathIndex])
             {
                 // Set the correct symbols on this table
                 for (int n = 0; n < 4; n++)
                 {
-                    tableScript.Symbols[n].GetComponent<Renderer>().material = Resources.Load($"Symbols/Materials/{symbols[0][n]}", typeof(Material)) as Material;
-                    SymbolsTable[n].GetComponent<Renderer>().material = Resources.Load($"Symbols/Materials/{symbols[0][n]}", typeof(Material)) as Material;
-                    /*var mat = Resources.Load($"Symbols/Materials/{symbols[0][n]}", typeof(Material)) as Material;
-                    Debug.LogError($"CRT Mat: {mat}\t material str: {symbols[0][n]}\ni:{i}, correctPathIndex: {correctPathIndex}, ind: {ind}, n:{n}, solutionTableIndex:{solutionTableIndex}");
-                    tableScript.Symbols[n].GetComponent<Renderer>().material = mat;*/
-                }
+                    //tableScript.Symbols[n].GetComponent<Renderer>().material = Resources.Load($"Symbols/Materials/{symbols[0][n]}", typeof(Material)) as Material;
+                    //SymbolsTable[n].GetComponent<Renderer>().material = Resources.Load($"Symbols/Materials/{symbols[0][n]}", typeof(Material)) as Material; // Symbols on Player A's side
+                    tableScript.Symbols[n].GetComponent<NetworkNode>().SetMaterial($"Symbols/Materials/{symbols[0][n]}", client);
+                    SymbolsTable[n].GetComponent<NetworkNode>().SetMaterial($"Symbols/Materials/{symbols[0][n]}", client); // Symbols on Player A's side
+    }
             }
             else
             {
                 // Set random incorrect symbols. 
                 for (int n = 0; n < 4; n++)
                 {
-                    tableScript.Symbols[n].GetComponent<Renderer>().material = Resources.Load($"Symbols/Materials/{symbols[symbolIncorrectCombinationIndex][n]}", typeof(Material)) as Material;
-                    /*var mat = Resources.Load($"Symbols/Materials/{symbols[symbolIncorrectCombinationIndex][n]}", typeof(Material)) as Material;
-                    Debug.LogError($"INCRT Mat: {mat}\t material str: {symbols[symbolIncorrectCombinationIndex][n]}\ni:{i}, correctPathIndex: {correctPathIndex}, ind: {ind}, n:{n}, solutionTableIndex:{solutionTableIndex}");
-                    tableScript.Symbols[n].GetComponent<Renderer>().material = mat;*/
+                    //tableScript.Symbols[n].GetComponent<Renderer>().material = Resources.Load($"Symbols/Materials/{symbols[symbolIncorrectCombinationIndex][n]}", typeof(Material)) as Material;
+                    tableScript.Symbols[n].GetComponent<NetworkNode>().SetMaterial($"Symbols/Materials/{symbols[symbolIncorrectCombinationIndex][n]}", client);
                 }
                 symbolIncorrectCombinationIndex++;
             }

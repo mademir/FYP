@@ -3,6 +3,7 @@
 
     public static class Values
     {
+        public static string EOF = "<EOF>";
         public static int ClientIDLength = 7;
     }
 

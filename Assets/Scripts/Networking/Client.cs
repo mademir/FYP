@@ -9,13 +9,14 @@ using System.Threading;
 using Newtonsoft.Json;
 using System.IO;
 using COM;
+using System.Linq;
 
 public class Client : MonoBehaviour
 {
     public string ServerIP = "127.0.0.1";
     TcpClient tcpClient;
     UdpClient udpClient;
-    int tcpBufferSize = 512;
+    int tcpBufferSize = 5120;
     public int ServerTcpPort = 1025;
     public int ServerUdpPort = 1026;
     internal int LocalUdpPort;
@@ -38,6 +39,9 @@ public class Client : MonoBehaviour
 
     bool runOnBackground = true;
 
+    List<NetworkNode> nodes = new List<NetworkNode>();
+    public List<string> nodeTcpMessagePool = new List<string>();
+
     //DateTime lastPackageReceiveTime;
     //double ConnectionTimeout = 5.0;
 
@@ -46,6 +50,9 @@ public class Client : MonoBehaviour
     {
         System.Random rnd = new System.Random();
         MyClientID = rnd.Next((int)Math.Pow(10, COM.Values.ClientIDLength - 1), (int)Math.Pow(10, COM.Values.ClientIDLength) - 1).ToString();
+
+        // Get all network nodes
+        nodes = FindObjectsOfType<NetworkNode>().ToList();
 
         // Setup UDP
         udpClient = new UdpClient(0); // Assign an available local port
@@ -95,6 +102,17 @@ public class Client : MonoBehaviour
             string jsonLobbyInfo = JsonConvert.SerializeObject(lobbyInfo);
             new Thread(() => SendTCPMessage("CREA" + jsonLobbyInfo)).Start();
         }
+
+        if (nodeTcpMessagePool.Any()) new Thread(() => FlushNodeTcpMessagePool()).Start();
+    }
+
+    void FlushNodeTcpMessagePool()
+    {
+        foreach (string msg in nodeTcpMessagePool)
+        {
+            SendTCPMessage(msg);
+        }
+        nodeTcpMessagePool.Clear();
     }
 
     private void FixedUpdate()
@@ -159,7 +177,7 @@ public class Client : MonoBehaviour
         try
         {
             NetworkStream networkStream = tcpClient.GetStream();
-            byte[] data = Encoding.ASCII.GetBytes(message);
+            byte[] data = Encoding.ASCII.GetBytes(message + COM.Values.EOF);
             networkStream.Write(data, 0, data.Length);
             Debug.Log($"TCP Sent: {message}");
             gameController.ShowConnectionLost = false;
@@ -184,7 +202,11 @@ public class Client : MonoBehaviour
                 //lastPackageReceiveTime = DateTime.Now;
                 gameController.ShowConnectionLost = false;
                 string receivedMessage = Encoding.ASCII.GetString(data, 0, bytesRead);
-                HandleTCPMessage(receivedMessage);
+
+                //Split merged messages
+                var messages = receivedMessage.Split(COM.Values.EOF, StringSplitOptions.RemoveEmptyEntries);
+                if (messages.Length > 1) { Debug.LogError("Multiple msgs received: " + receivedMessage); }
+                foreach ( var message in messages ) HandleTCPMessage(message);
             }
         }
         catch (IOException e)
@@ -221,8 +243,37 @@ public class Client : MonoBehaviour
             case "LOUP":
                 ReceiveLobbyUpdate(data);
                 break;
+            case "FORW":
+                ReceiveNodeUpdate(data);
+                break;
             default:
                 Console.WriteLine($"Unknown command: {command}");
+                break;
+        }
+    }
+
+    private void ReceiveNodeUpdate(string message)
+    {
+        if (message.Length < ClientCOM.Values.NodeIDLength) return;
+        string nodeID = message.Substring(0, ClientCOM.Values.NodeIDLength);
+
+        //Find node
+        var ns = nodes.Where(n => n.ID == nodeID);
+        if (!ns.Any()) return;
+        var node = ns.First();
+
+        string msg = message.Substring(ClientCOM.Values.NodeIDLength);
+        if (msg.Length < NetworkNode.ActionCodes.ActionCodeLength) return;
+        string actionCode = msg.Substring(0, NetworkNode.ActionCodes.ActionCodeLength);
+        string data = msg.Substring(NetworkNode.ActionCodes.ActionCodeLength);
+
+        switch (actionCode)
+        {
+            case NetworkNode.ActionCodes.SetMaterial:
+                gameController.ExecuteOnMainThread.Add(() => node.SetMaterial(data, null, false));
+                break;
+            default:
+                Console.WriteLine($"Unknown Network Node Action Code: {actionCode}");
                 break;
         }
     }

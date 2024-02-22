@@ -12,7 +12,7 @@ namespace Networking {
     {
 
         //static String IP = "192.168.1.46";//"192.168.1.172";//"127.0.0.1";
-        static int tcpBufferSize = 512;
+        static int tcpBufferSize = 5120;
         static int tcpPort = 1025;
         static int udpPort = 1026;
 
@@ -20,6 +20,7 @@ namespace Networking {
         static List<Lobby> lobbies = new List<Lobby>();
 
         static Dictionary<string, TcpClient> clients = new Dictionary<string, TcpClient>();
+        static Dictionary<string, string> recipients = new Dictionary<string, string>();
         static Dictionary<string, IPEndPoint> udpRecipients = new Dictionary<string, IPEndPoint>();
 
         //static int TCPTicks = 10;
@@ -134,9 +135,17 @@ namespace Networking {
                     lastBytesRead = bytesRead;
 
                     message = Encoding.ASCII.GetString(data, 0, bytesRead);
-                    Console.WriteLine($"{(tcpClient.Client.RemoteEndPoint as IPEndPoint).Address}: {message}");
 
-                    ParseTCPRequest(message, tcpClient);
+                    // Split merged messages
+                    var messages = message.Split(COM.Values.EOF, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (string msg in messages)
+                    {
+                        Console.WriteLine($"{(tcpClient.Client.RemoteEndPoint as IPEndPoint).Address}: {msg}");
+
+                        ParseTCPRequest(msg, tcpClient);
+                    }
+
+                    
 
                     // Send a response back to the client.
                     //byte[] response = Encoding.ASCII.GetBytes($"You sent: {message}");
@@ -159,7 +168,7 @@ namespace Networking {
         }
         static void SendTCPMessage(string message, TcpClient tcpClient)
         {
-            byte[] responseData = Encoding.ASCII.GetBytes(message);
+            byte[] responseData = Encoding.ASCII.GetBytes(message + COM.Values.EOF);
             tcpClient.GetStream().Write(responseData, 0, responseData.Length);
         }
 
@@ -193,10 +202,27 @@ namespace Networking {
                 case "STRT":
                     StartLobby(data, tcpClient);
                     break;
+                case "FORW":
+                    ForwardMessage(data, tcpClient);
+                    break;
                 default:
                     Console.WriteLine($"Unknown command: {command}");
                     break;
             }
+        }
+
+        private static void ForwardMessage(string message, TcpClient tcpClient)
+        {
+            if (message.Length < COM.Values.ClientIDLength) return;
+            string senderClientID = message.Substring(0, COM.Values.ClientIDLength);
+            string recipientID = recipients[senderClientID];
+            var recipient = clients[recipientID];
+
+            string response = "FORW" + message.Substring(COM.Values.ClientIDLength);
+            Console.WriteLine($"Sending response: {response}");
+
+            // Send a message to its recipient.
+            SendTCPMessage(response, recipient);
         }
 
         static void SendLobbyList(TcpClient tcpClient)
@@ -390,9 +416,11 @@ namespace Networking {
                     {
                         // Bind A to B
                         IPEndPoint remoteEP = new IPEndPoint((clients[lobby.PlayerB.ID].Client.RemoteEndPoint as IPEndPoint).Address, lobby.PlayerB.UdpPort);
+                        recipients.Add(lobby.PlayerA.ID, lobby.PlayerB.ID);
                         udpRecipients.Add(lobby.PlayerA.ID, remoteEP);
                         // Bind B to A
                         remoteEP = new IPEndPoint((clients[lobby.PlayerA.ID].Client.RemoteEndPoint as IPEndPoint).Address, lobby.PlayerA.UdpPort);
+                        recipients.Add(lobby.PlayerB.ID, lobby.PlayerA.ID);
                         udpRecipients.Add(lobby.PlayerB.ID, remoteEP);
                     }
                     catch (Exception e)

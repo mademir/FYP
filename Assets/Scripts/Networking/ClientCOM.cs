@@ -6,6 +6,8 @@ namespace ClientCOM
 {
     public class Values
     {
+        public const int NodeIDLength = 8;
+
         public const int TagLength = 5;
         public const string TransformTag = "TRANS";
         public const string VoiceTag = "VOICE";
