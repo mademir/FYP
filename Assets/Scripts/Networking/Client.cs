@@ -407,7 +407,7 @@ public class Client : MonoBehaviour
                 SetPeerTransform(data);
                 break;
             case ClientCOM.Values.VoiceTag:
-                VoiceChat.VoiceData.Push(data);
+                VoiceChat.VoiceData.Add(data);
                 break;
             default:
                 Console.WriteLine($"Unknown command: {command}");
