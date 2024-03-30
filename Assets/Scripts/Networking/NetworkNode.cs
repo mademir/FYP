@@ -10,6 +10,7 @@ public class NetworkNode : MonoBehaviour
     {
         public const int ActionCodeLength = 5;
         public const string SetMaterial = "MATER";
+        public const string SetAnimationTrigger = "ANIMT";
     }
 
     public string ID = new string('0', ClientCOM.Values.NodeIDLength);
@@ -21,5 +22,12 @@ public class NetworkNode : MonoBehaviour
 
         //if (isLocal) new Thread(() => client.SendTCPMessage("FORW" + client.MyClientID + ID.ToString() + ActionCodes.SetMaterial + materialName)).Start();
         if (isLocal) client.nodeTcpMessagePool.Add("FORW" + client.MyClientID + ID.ToString() + ActionCodes.SetMaterial + materialName);
+    }
+
+    public void SetAnimationTrigger(string trigger, Client client, bool isLocal = true)
+    {
+        gameObject.GetComponent<Animator>().SetTrigger(trigger);
+
+        if (isLocal) client.nodeTcpMessagePool.Add("FORW" + client.MyClientID + ID.ToString() + ActionCodes.SetAnimationTrigger + trigger);
     }
 }

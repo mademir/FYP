@@ -39,6 +39,8 @@ public class GameController : MonoBehaviour
     List<GameObject> LobbiesItems = new List<GameObject>();
     List<GameObject> LobbyItems = new List<GameObject>();
 
+    public List<NetworkNode> Checkpoint1Doors = new List<NetworkNode>();
+
     public enum AppState
     {
         MainMenu,
@@ -55,6 +57,8 @@ public class GameController : MonoBehaviour
     bool tmpShowConnectionLost;
 
     internal List<Action> ExecuteOnMainThread = new List<Action>();
+
+    int currentCheckpointIndex = 0;
 
     // Start is called before the first frame update
     void Start()
@@ -184,5 +188,19 @@ public class GameController : MonoBehaviour
     {
         gameObject.transform.position = target.position;
         gameObject.transform.rotation = target.rotation;
+    }
+
+    public void OnCheckpointReached(int c)
+    {
+        if (currentCheckpointIndex >= c) return;
+        currentCheckpointIndex = c;
+        switch (c)
+        {
+            case 1:
+                Debug.Log("Checkpoint 1 Reached");
+                foreach (NetworkNode doors in Checkpoint1Doors) doors.SetAnimationTrigger("TrReached", client, true);
+                break;
+            default: break;
+        }
     }
 }

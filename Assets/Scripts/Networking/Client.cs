@@ -272,6 +272,9 @@ public class Client : MonoBehaviour
             case NetworkNode.ActionCodes.SetMaterial:
                 gameController.ExecuteOnMainThread.Add(() => node.SetMaterial(data, null, false));
                 break;
+            case NetworkNode.ActionCodes.SetAnimationTrigger:
+                gameController.ExecuteOnMainThread.Add(() => node.SetAnimationTrigger(data, null, false));
+                break;
             default:
                 Console.WriteLine($"Unknown Network Node Action Code: {actionCode}");
                 break;
@@ -363,7 +366,7 @@ public class Client : MonoBehaviour
             message = MyClientID + message;
             byte[] data = Encoding.ASCII.GetBytes(message);
             udpClient.Send(data, data.Length, serverEP);
-            Debug.Log($"UDP Sent: {message}");
+            //Debug.Log($"UDP Sent: {message}");
         }
         catch (Exception e)
         {
@@ -381,7 +384,7 @@ public class Client : MonoBehaviour
                 IPEndPoint remoteEP = new IPEndPoint(IPAddress.Any, 0);
                 byte[] data = udpClient.Receive(ref remoteEP);
                 string receivedMessage = Encoding.ASCII.GetString(data);
-                Debug.Log($"UDP Received: {receivedMessage}");
+                //Debug.Log($"UDP Received: {receivedMessage}");
                 ParseUdpMessage(receivedMessage);
             }
             catch (Exception e)
