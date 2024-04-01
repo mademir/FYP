@@ -257,6 +257,8 @@ public class Client : MonoBehaviour
         if (message.Length < ClientCOM.Values.NodeIDLength) return;
         string nodeID = message.Substring(0, ClientCOM.Values.NodeIDLength);
 
+        if (nodeID == GameController.VariableUpdateCodes.VariableUpdateSpecialID) gameController.ParseVariableUpdate(message); // Special case for variable update
+
         //Find node
         var ns = nodes.Where(n => n.ID == nodeID);
         if (!ns.Any()) return;
@@ -323,11 +325,18 @@ public class Client : MonoBehaviour
             {
                 Debug.Log("Starting Game..");
                 gameController.ExecuteOnMainThread.Add(() => gameController.PeerGO.SetActive(true));
-                if (MyClientID == lobby.PlayerA.ID) gameController.ExecuteOnMainThread.Add(() => gameController.Teleport(gameController.PlayerGO, gameController.SpawnA.transform));
+                if (MyClientID == lobby.PlayerA.ID) gameController.ExecuteOnMainThread.Add(() => {
+                    gameController.CurrentSpawn = gameController.ASpawns[0].transform;
+                    gameController.Teleport(gameController.PlayerGO, gameController.CurrentSpawn);
+                    gameController.playerTag = "A";
+                }
+                );
                 if (MyClientID == lobby.PlayerB.ID) gameController.ExecuteOnMainThread.Add(() => {
-                    gameController.Teleport(gameController.PlayerGO, gameController.SpawnB.transform);
+                    gameController.CurrentSpawn = gameController.BSpawns[0].transform;
+                    gameController.Teleport(gameController.PlayerGO, gameController.CurrentSpawn);
                     gameController.PlayerGO.GetComponent<Renderer>().material = gameController.PlayerBMaterial;
                     gameController.PeerGO.GetComponent<Renderer>().material = gameController.PlayerAMaterial;
+                    gameController.playerTag = "B";
                 });
                 udpStreaming = true;
                 new Thread(() => StartUdpStream()).Start();

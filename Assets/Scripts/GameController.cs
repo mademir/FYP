@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using static NetworkNode;
 
 public class GameController : MonoBehaviour
 {
@@ -11,8 +12,10 @@ public class GameController : MonoBehaviour
     public Player MyPlayer;
     public GameObject PlayerGO;
     public GameObject PeerGO;
-    public GameObject SpawnA;
-    public GameObject SpawnB;
+    public string playerTag = "A";
+    public List<GameObject> ASpawns = new List<GameObject>();
+    public List<GameObject> BSpawns = new List<GameObject>();
+    public Transform CurrentSpawn;
 
     public GameObject UI;
     public GameObject MainMenu;
@@ -40,6 +43,8 @@ public class GameController : MonoBehaviour
     List<GameObject> LobbyItems = new List<GameObject>();
 
     public List<NetworkNode> Checkpoint1Doors = new List<NetworkNode>();
+    public List<NetworkNode> Checkpoint2Doors = new List<NetworkNode>();
+    public List<NetworkNode> Swings = new List<NetworkNode>();
 
     public enum AppState
     {
@@ -194,13 +199,51 @@ public class GameController : MonoBehaviour
     {
         if (currentCheckpointIndex >= c) return;
         currentCheckpointIndex = c;
+        client.nodeTcpMessagePool.Add("FORW" + client.MyClientID + VariableUpdateCodes.VariableUpdateSpecialID + VariableUpdateCodes.SetCurrentCheckpointIndex + c.ToString()); //Update Peer Checkpoint
+        UpdateSpawn();
         switch (c)
         {
             case 1:
                 Debug.Log("Checkpoint 1 Reached");
                 foreach (NetworkNode doors in Checkpoint1Doors) doors.SetAnimationTrigger("TrReached", client, true);
+                foreach (NetworkNode swing in Swings) swing.SetAnimationTrigger("TrSwing", client, true);
+                break;
+            case 2:
+                Debug.Log("Checkpoint 2 Reached");
+                foreach (NetworkNode doors in Checkpoint2Doors) doors.SetAnimationTrigger("TrReached", client, true);
                 break;
             default: break;
+        }
+    }
+
+    private void UpdateSpawn() => CurrentSpawn = ((playerTag == "A") ? ASpawns[currentCheckpointIndex] : BSpawns[currentCheckpointIndex]).transform;
+
+    public class VariableUpdateCodes
+    {
+        public const int VariableUpdateCodeLength = 5;
+        public const string VariableUpdateSpecialID = "11111111";
+        public const string SetCurrentCheckpointIndex = "CURCP";
+    }
+
+    public void ParseVariableUpdate(string message)
+    {
+        string msg = message.Substring(ClientCOM.Values.NodeIDLength);
+        if (msg.Length < VariableUpdateCodes.VariableUpdateCodeLength) return;
+        string variableUpdateCode = msg.Substring(0, VariableUpdateCodes.VariableUpdateCodeLength);
+        string value = msg.Substring(VariableUpdateCodes.VariableUpdateCodeLength);
+
+        switch (variableUpdateCode)
+        {
+            case VariableUpdateCodes.SetCurrentCheckpointIndex:
+                currentCheckpointIndex = int.Parse(value);
+                ExecuteOnMainThread.Add(() => UpdateSpawn());  //Peer reached checkpoint
+                //If first checkpoint, make the swings invisible for player B
+                if (currentCheckpointIndex == 1 && playerTag == "B")
+                    ExecuteOnMainThread.Add(() => {foreach (NetworkNode swing in Swings) swing.GetComponent<Swingy>().MakeInvisible();});
+                break;
+            default:
+                Console.WriteLine($"Unknown Variable Update Code: {variableUpdateCode}");
+                break;
         }
     }
 }

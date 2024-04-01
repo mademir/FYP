@@ -17,7 +17,7 @@ public class PlayerController : MonoBehaviour
     private float verticalRotationLimit = -80f;
     public bool canMove = false;
 
-    public Transform spawn;
+    public GameController gameController;
 
     public void LockCursor(bool state)
     {
@@ -89,6 +89,6 @@ public class PlayerController : MonoBehaviour
 
     public void Die()
     {
-        transform.SetPositionAndRotation(spawn.position, spawn.rotation);
+        transform.SetPositionAndRotation(gameController.CurrentSpawn.position, gameController.CurrentSpawn.rotation);
     }
 }
