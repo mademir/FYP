@@ -44,6 +44,7 @@ public class GameController : MonoBehaviour
 
     public List<NetworkNode> Checkpoint1Doors = new List<NetworkNode>();
     public List<NetworkNode> Checkpoint2Doors = new List<NetworkNode>();
+    public List<NetworkNode> Checkpoint3Doors = new List<NetworkNode>();
     public List<NetworkNode> Swings = new List<NetworkNode>();
 
     public enum AppState
@@ -211,6 +212,10 @@ public class GameController : MonoBehaviour
             case 2:
                 Debug.Log("Checkpoint 2 Reached");
                 foreach (NetworkNode doors in Checkpoint2Doors) doors.SetAnimationTrigger("TrReached", client, true);
+                break;
+            case 3:
+                Debug.Log("Checkpoint 3 Reached");
+                foreach (NetworkNode doors in Checkpoint3Doors) doors.SetAnimationTrigger("TrReached", client, true);
                 break;
             default: break;
         }

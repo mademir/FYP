@@ -4,8 +4,6 @@ using UnityEngine;
 
 public class Swingy : MonoBehaviour
 {
-    public GameController gameController;
-
     private void OnCollisionEnter(Collision collision)
     {
         if (collision.gameObject.tag == "Player")
