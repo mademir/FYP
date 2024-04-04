@@ -30,6 +30,7 @@ public class GameController : MonoBehaviour
     public LobbyController lobbyController;
 
     public PressurePlatePuzzleController PressurePlatePuzzle;
+    public FallingTilesPuzzle fallingTilesPuzzle;
 
     public AudioSource AudioPlayer;
     public string MyName { get { return NameField.GetComponentInChildren<TMP_InputField>().text; } }
@@ -216,6 +217,7 @@ public class GameController : MonoBehaviour
             case 3:
                 Debug.Log("Checkpoint 3 Reached");
                 foreach (NetworkNode doors in Checkpoint3Doors) doors.SetAnimationTrigger("TrReached", client, true);
+                fallingTilesPuzzle.SetTileColours();
                 break;
             default: break;
         }

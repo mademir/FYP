@@ -205,7 +205,7 @@ public class Client : MonoBehaviour
 
                 //Split merged messages
                 var messages = receivedMessage.Split(COM.Values.EOF, StringSplitOptions.RemoveEmptyEntries);
-                if (messages.Length > 1) { Debug.LogError("Multiple msgs received: " + receivedMessage); }
+                if (messages.Length > 1) { Debug.Log("Multiple msgs received: " + receivedMessage); }
                 foreach ( var message in messages ) HandleTCPMessage(message);
             }
         }
@@ -276,6 +276,12 @@ public class Client : MonoBehaviour
                 break;
             case NetworkNode.ActionCodes.SetAnimationTrigger:
                 gameController.ExecuteOnMainThread.Add(() => node.SetAnimationTrigger(data, null, false));
+                break;
+            case NetworkNode.ActionCodes.SetIsKinematic:
+                gameController.ExecuteOnMainThread.Add(() => node.SetIsKinematic(data, null, false));
+                break;
+            case NetworkNode.ActionCodes.ResetLocalTransform:
+                gameController.ExecuteOnMainThread.Add(() => node.ResetLocalTransform(null, false));
                 break;
             default:
                 Console.WriteLine($"Unknown Network Node Action Code: {actionCode}");
