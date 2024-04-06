@@ -48,6 +48,12 @@ public class Client : MonoBehaviour
 
     private void Start()
     {
+        List<string> commandLineArgs = Environment.GetCommandLineArgs().ToList();
+        for (int i = 0; i < commandLineArgs.Count; i++)
+        {
+            if (commandLineArgs[i] == "-ServerIP" && commandLineArgs.Count > i+1) ServerIP = commandLineArgs[i+1];
+        }
+
         System.Random rnd = new System.Random();
         MyClientID = rnd.Next((int)Math.Pow(10, COM.Values.ClientIDLength - 1), (int)Math.Pow(10, COM.Values.ClientIDLength) - 1).ToString();
 
