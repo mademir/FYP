@@ -332,24 +332,25 @@ public class Client : MonoBehaviour
                 Debug.Log("Starting Game..");
                 gameController.ExecuteOnMainThread.Add(() => gameController.PeerGO.SetActive(true));
                 if (MyClientID == lobby.PlayerA.ID) gameController.ExecuteOnMainThread.Add(() => {
-                    gameController.CurrentSpawn = gameController.ASpawns[0].transform;
+                    gameController.CurrentSpawn = gameController.DefaultSpawns[0].transform;
                     gameController.Teleport(gameController.PlayerGO, gameController.CurrentSpawn);
-                    gameController.playerTag = "A";
+                    //gameController.playerTag = "A";
                 }
                 );
                 if (MyClientID == lobby.PlayerB.ID) gameController.ExecuteOnMainThread.Add(() => {
-                    gameController.CurrentSpawn = gameController.BSpawns[0].transform;
+                    gameController.CurrentSpawn = gameController.DefaultSpawns[1].transform;
                     gameController.Teleport(gameController.PlayerGO, gameController.CurrentSpawn);
                     gameController.PlayerGO.GetComponent<Renderer>().material = gameController.PlayerBMaterial;
                     gameController.PeerGO.GetComponent<Renderer>().material = gameController.PlayerAMaterial;
-                    gameController.playerTag = "B";
+                    //gameController.playerTag = "B";
                 });
                 udpStreaming = true;
                 new Thread(() => StartUdpStream()).Start();
                 gameController.ExecuteOnMainThread.Add(() => gameController.SwitchToGame());
-                if (MyClientID == lobby.PlayerA.ID) gameController.ExecuteOnMainThread.Add(() => gameController.PressurePlatePuzzle.SetupPuzzle()); // Only let Player A setup the puzzle
+                //if (MyClientID == lobby.PlayerA.ID) gameController.ExecuteOnMainThread.Add(() => gameController.PressurePlatePuzzle.SetupPuzzle()); // Only let Player A setup the puzzle
             }
 
+            if (lobby.CurrentGameState == GameState.EndGame) gameController.ExecuteOnMainThread.Add(() => { gameController.ResetGame(); });
         }
     }
 
@@ -485,9 +486,23 @@ public class Client : MonoBehaviour
 
     public void ReqStartGame()
     {
-        string jsonStartGameInfo = JsonConvert.SerializeObject(new COM.StartGameInfo(gameController.lobbyController.MyLobby.ID, MyClientID));
+        string jsonStartGameInfo = JsonConvert.SerializeObject(new COM.StartEndGameInfo(gameController.lobbyController.MyLobby.ID, MyClientID));
 
         new Thread(() => SendTCPMessage("STRT" + jsonStartGameInfo)).Start();
+    }
+
+    public void ReqEndGame()
+    {
+        string jsonEndGameInfo = JsonConvert.SerializeObject(new COM.StartEndGameInfo(gameController.lobbyController.MyLobby.ID, MyClientID));
+
+        new Thread(() => SendTCPMessage("ENDG" + jsonEndGameInfo)).Start();
+    }
+
+    public void ReqLobbyNameUpdate(string newName)
+    {
+        string jsonNameUpdateInfo = JsonConvert.SerializeObject(new COM.LobbyNameUpdateInfo(gameController.lobbyController.MyLobby.ID, MyClientID, newName));
+
+        new Thread(() => SendTCPMessage("LNUP" + jsonNameUpdateInfo)).Start();
     }
 
 

@@ -24,7 +24,9 @@ public class LobbyController : MonoBehaviour
         if (MyLobby.PlayerB != null) AddPlayer(MyLobby.PlayerB);
 
         string ownerID = (new List<COM.Client>() { MyLobby.PlayerA, MyLobby.PlayerB }).Where(c => c.LobbyLeader).First().ID;
-        if (client.MyClientID == ownerID) StartBtn.SetActive(true);
+        //if (client.MyClientID == ownerID) StartBtn.SetActive(true);
+        StartBtn.SetActive(client.MyClientID == ownerID && MyLobby.PlayerA != null && MyLobby.PlayerB != null);
+        Name.readOnly = client.MyClientID != ownerID;
     }
 
     public void ClearAllPlayers()
@@ -46,7 +48,7 @@ public class LobbyController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        
+
     }
 
     // Update is called once per frame

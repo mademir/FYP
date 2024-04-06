@@ -32,15 +32,29 @@
         }
     }
 
-    public class StartGameInfo
+    public class StartEndGameInfo
     {
         public string LobbyID { get; set; }
         public string PlayerID { get; set; }
 
-        public StartGameInfo(string lobbyID, string playerID)
+        public StartEndGameInfo(string lobbyID, string playerID)
         {
             LobbyID = lobbyID;
             PlayerID = playerID;
+        }
+    }
+
+    public class LobbyNameUpdateInfo
+    {
+        public string LobbyID { get; set; }
+        public string PlayerID { get; set; }
+        public string NewName { get; set; }
+
+        public LobbyNameUpdateInfo(string lobbyID, string playerID, string newName)
+        {
+            LobbyID = lobbyID;
+            PlayerID = playerID;
+            NewName = newName;
         }
     }
 
@@ -65,6 +79,7 @@
     public enum GameState
     {
         InLobby,
-        InGame
+        InGame,
+        EndGame
     }
 }

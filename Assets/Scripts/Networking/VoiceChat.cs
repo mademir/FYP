@@ -29,7 +29,7 @@ public class VoiceChat : MonoBehaviour
     {
         int min, max;
         Microphone.GetDeviceCaps(null, out min, out max);
-        Debug.LogError($"Mic frequency min: {min}, max: {max}");
+        Debug.Log($"Mic frequency min: {min}, max: {max}");
         //Frequency = max;
         clip = Microphone.Start(null, true, 1800, Frequency);
         while (Microphone.GetPosition(null) < 0) { }

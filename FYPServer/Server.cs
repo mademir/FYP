@@ -202,6 +202,12 @@ namespace Networking {
                 case "STRT":
                     StartLobby(data, tcpClient);
                     break;
+                case "ENDG":
+                    EndLobbyGame(data, tcpClient);
+                    break;
+                case "LNUP":
+                    UpdateLobbyName(data, tcpClient);
+                    break;
                 case "FORW":
                     ForwardMessage(data, tcpClient);
                     break;
@@ -392,7 +398,7 @@ namespace Networking {
 
         private static void StartLobby(string data, TcpClient tcpClient)
         {
-            var startGameInfo = JsonSerializer.Deserialize<COM.StartGameInfo>(data);
+            var startGameInfo = JsonSerializer.Deserialize<COM.StartEndGameInfo>(data);
             if (startGameInfo == null) return;
 
             var lobbyID = startGameInfo.LobbyID;
@@ -432,6 +438,60 @@ namespace Networking {
                     Console.WriteLine($"Starting lobby '{lobby.Name}'.");
 
                     lobby.CurrentGameState = GameState.InGame;
+                    BroadcastLobbyUpdate(lobby);
+                }
+            }
+            else
+            {
+                Console.WriteLine($"Lobby '{lobbyID}' does not exist.");
+            }
+        }
+
+        private static void EndLobbyGame(string data, TcpClient tcpClient)
+        {
+            var endGameInfo = JsonSerializer.Deserialize<COM.StartEndGameInfo>(data);
+            if (endGameInfo == null) return;
+
+            var lobbyID = endGameInfo.LobbyID;
+
+            var lobbiesFound = lobbies.Where(l => l.ID == endGameInfo.LobbyID).ToList();
+
+            if (lobbiesFound.Any())
+            {
+                var lobby = lobbiesFound[0];
+                lobby.CurrentGameState = GameState.EndGame;
+                BroadcastLobbyUpdate(lobby);
+                lobbies.Remove(lobby);
+            }
+            else
+            {
+                Console.WriteLine($"Lobby '{lobbyID}' does not exist.");
+            }
+        }
+
+
+        private static void UpdateLobbyName(string data, TcpClient tcpClient)
+        {
+            var lobbyNameInfo = JsonSerializer.Deserialize<COM.LobbyNameUpdateInfo>(data);
+            if (lobbyNameInfo == null) return;
+
+            var lobbyID = lobbyNameInfo.LobbyID;
+
+            var lobbiesFound = lobbies.Where(l => l.ID == lobbyNameInfo.LobbyID).ToList();
+
+            if (lobbiesFound.Any())
+            {
+                var lobby = lobbiesFound[0];
+
+                bool isLeader = false;
+                foreach (var player in new List<COM.Client>() { lobby.PlayerA, lobby.PlayerB })
+                {
+                    if (player != null && player.ID == lobbyNameInfo.PlayerID && player.LobbyLeader) isLeader = true;
+                }
+
+                if (isLeader)
+                {
+                    lobby.Name = lobbyNameInfo.NewName;
                     BroadcastLobbyUpdate(lobby);
                 }
             }

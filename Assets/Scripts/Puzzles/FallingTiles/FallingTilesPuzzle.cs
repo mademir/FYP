@@ -38,11 +38,11 @@ public class FallingTilesPuzzle : MonoBehaviour
         else
         {
             currentTileIndex = i;
-        }
         
-        if (currentTileIndex == 5)
-        {
-            gameController.OnCheckpointReached(CheckpointIndex);
+            if (currentTileIndex == 5)
+            {
+                gameController.OnCheckpointReached(CheckpointIndex);
+            }
         }
     }
 

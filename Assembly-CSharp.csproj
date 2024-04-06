@@ -58,11 +58,14 @@
   <ItemGroup>
     <Compile Include="Assets\Scripts\Networking\Player.cs" />
     <Compile Include="Assets\Scripts\Checkpoint.cs" />
+    <Compile Include="Assets\Scripts\EntrancePressurePlate.cs" />
     <Compile Include="Assets\Scripts\Puzzles\Swingy\Swingy.cs" />
     <Compile Include="Assets\Scripts\Puzzles\PressurePlate\PressurePlate.cs" />
     <Compile Include="Assets\Scripts\Networking\Lobby.cs" />
     <Compile Include="Assets\Scripts\Puzzles\Flappy\FlappyLever.cs" />
     <Compile Include="Assets\BrokenVector\LowPolyDungeon\Demo Scenes\ScreenshotMaker.cs" />
+    <Compile Include="Assets\Scripts\Puzzles\FallingTiles\FallingTile.cs" />
+    <Compile Include="Assets\Scripts\Puzzles\FallingTiles\FallingTilesPuzzle.cs" />
     <Compile Include="Assets\BrokenVector\LowPolyDungeon\Demo Scenes\PlayerMovement.cs" />
     <Compile Include="Assets\Scripts\Networking\NetworkNode.cs" />
     <Compile Include="Assets\Scripts\GameController.cs" />
@@ -72,12 +75,11 @@
     <Compile Include="Assets\Scripts\Networking\VoiceChat.cs" />
     <Compile Include="Assets\Scripts\Puzzles\Flappy\FlappySpikes.cs" />
     <Compile Include="Assets\Scripts\Networking\ClientCOM.cs" />
+    <Compile Include="Assets\Scripts\EndPipe.cs" />
     <Compile Include="Assets\Scripts\Puzzles\PressurePlate\PressurePlateSolutionTable.cs" />
     <Compile Include="Assets\Scripts\LobbyController.cs" />
-    <Compile Include="Assets\Scripts\Player\PlayerController.cs" />
-    <Compile Include="Assets\Scripts\Puzzles\FallingTiles\FallingTilesPuzzle.cs" />
     <Compile Include="Assets\Scripts\Puzzles\FallingTiles\FallingTilesSpikes.cs" />
-    <Compile Include="Assets\Scripts\Puzzles\FallingTiles\FallingTile.cs" />
+    <Compile Include="Assets\Scripts\Player\PlayerController.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\TextMesh Pro\Shaders\TMPro.cginc" />

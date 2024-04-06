@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using static NetworkNode;
 
@@ -15,6 +16,7 @@ public class GameController : MonoBehaviour
     public string playerTag = "A";
     public List<GameObject> ASpawns = new List<GameObject>();
     public List<GameObject> BSpawns = new List<GameObject>();
+    public List<GameObject> DefaultSpawns = new List<GameObject>();
     public Transform CurrentSpawn;
 
     public GameObject UI;
@@ -43,9 +45,11 @@ public class GameController : MonoBehaviour
     List<GameObject> LobbiesItems = new List<GameObject>();
     List<GameObject> LobbyItems = new List<GameObject>();
 
+    public List<NetworkNode> EntranceDoors = new List<NetworkNode>();
     public List<NetworkNode> Checkpoint1Doors = new List<NetworkNode>();
     public List<NetworkNode> Checkpoint2Doors = new List<NetworkNode>();
     public List<NetworkNode> Checkpoint3Doors = new List<NetworkNode>();
+    public List<NetworkNode> Checkpoint4Doors = new List<NetworkNode>();
     public List<NetworkNode> Swings = new List<NetworkNode>();
 
     public enum AppState
@@ -66,6 +70,7 @@ public class GameController : MonoBehaviour
     internal List<Action> ExecuteOnMainThread = new List<Action>();
 
     int currentCheckpointIndex = 0;
+    public bool PlayerTagsAssigned = false;
 
     // Start is called before the first frame update
     void Start()
@@ -78,6 +83,14 @@ public class GameController : MonoBehaviour
         tmpShowConnectionLost = ShowConnectionLost;
 
         SwitchToMainMenu();
+
+        //Auto switch to lobbies view if player name is saved (it is only saved when reloading the game)
+        if (PlayerPrefs.HasKey("MyName"))
+        {
+            NameField.GetComponentInChildren<TMP_InputField>().text = PlayerPrefs.GetString("MyName");
+            PlayerPrefs.DeleteKey("MyName");
+            ExecuteOnMainThread.Add(SwitchToLobbies);   //To wait before executing
+        }
     }
 
     // Update is called once per frame
@@ -100,6 +113,21 @@ public class GameController : MonoBehaviour
             }
         }
         ExecuteOnMainThread.Clear();
+
+        if (!PlayerTagsAssigned)
+        {
+            if (PlayerGO.transform.position.x < 35 && Math.Abs(PlayerGO.transform.position.z + 5.5f) > 4f
+                && PeerGO.transform.position.x < 35 && Math.Abs(PeerGO.transform.position.z + 5.5f) > 4f) //Check if they passed entrance
+            {
+                // Assign player tags
+                playerTag = PlayerGO.transform.position.z > -5.5f ? "A" : "B";
+                PlayerTagsAssigned = true;
+                Debug.Log("Player tags are assigned");
+                if (playerTag == "A") PressurePlatePuzzle.SetupPuzzle(); // Only let Player A setup the puzzle
+                UpdateSpawn();
+                foreach (NetworkNode doors in EntranceDoors) doors.SetAnimationTrigger("TrOpen", client, true);
+            }
+        }
     }
 
     public void onMuteToggle()
@@ -152,6 +180,7 @@ public class GameController : MonoBehaviour
 
     public void CloseGame()
     {
+        if (PlayerPrefs.HasKey("MyName")) PlayerPrefs.DeleteKey("MyName");
         client?.Disconnect();
         Application.Quit();
     }
@@ -219,6 +248,10 @@ public class GameController : MonoBehaviour
                 foreach (NetworkNode doors in Checkpoint3Doors) doors.SetAnimationTrigger("TrReached", client, true);
                 fallingTilesPuzzle.SetTileColours();
                 break;
+            case 4:
+                Debug.Log("Checkpoint 4 Reached");
+                foreach (NetworkNode doors in Checkpoint4Doors) doors.SetAnimationTrigger("TrReached", client, true);
+                break;
             default: break;
         }
     }
@@ -253,4 +286,14 @@ public class GameController : MonoBehaviour
                 break;
         }
     }
+
+    public void OnGameFinished() => client.ReqEndGame();
+
+    public void ResetGame()
+    {
+        PlayerPrefs.SetString("MyName", MyName);
+        SceneManager.LoadScene("SampleScene");
+    }
+
+    public void OnLobbyNameChange() => client.ReqLobbyNameUpdate(lobbyController.Name.text);
 }
