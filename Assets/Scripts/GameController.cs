@@ -23,6 +23,7 @@ public class GameController : MonoBehaviour
     public GameObject MainMenu;
     public GameObject LobbiesView;
     public GameObject LobbyView;
+    public GameObject EscapeMenu;
 
     public GameObject ConnectionLostMsg;
 
@@ -71,6 +72,8 @@ public class GameController : MonoBehaviour
 
     int currentCheckpointIndex = 0;
     public bool PlayerTagsAssigned = false;
+
+    bool isOnEscapeMenu = false;
 
     // Start is called before the first frame update
     void Start()
@@ -169,6 +172,7 @@ public class GameController : MonoBehaviour
 
     internal void SwitchToGame()
     {
+        SetupView(new List<GameObject> { EscapeMenu }); // Activate escape menu before turning off UI
         UI.SetActive(false);
         PlayerGO.GetComponent<PlayerController>().canMove = true;
     }
@@ -296,4 +300,14 @@ public class GameController : MonoBehaviour
     }
 
     public void OnLobbyNameChange() => client.ReqLobbyNameUpdate(lobbyController.Name.text);
+
+    public void ToggleEscapeMenu()
+    {
+        if (lobbyController.MyLobby.CurrentGameState != COM.GameState.InGame) return;
+        isOnEscapeMenu = !isOnEscapeMenu;
+
+        PlayerGO.GetComponent<PlayerController>().canMove = !isOnEscapeMenu;
+
+        UI.SetActive(isOnEscapeMenu);
+    }
 }
