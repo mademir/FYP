@@ -21,6 +21,7 @@ public class Client : MonoBehaviour
     public int ServerUdpPort = 1026;
     internal int LocalUdpPort;
 
+    public bool UdpOverTcp = false;
     public bool hosting = false;
     public string plyrName = "";
     public bool send = false;
@@ -252,6 +253,9 @@ public class Client : MonoBehaviour
             case "FORW":
                 ReceiveNodeUpdate(data);
                 break;
+            case "UDPO":
+                ParseUdpMessage(data);
+                break;
             default:
                 Console.WriteLine($"Unknown command: {command}");
                 break;
@@ -383,6 +387,12 @@ public class Client : MonoBehaviour
 
     public void SendUDPMessage(string message)
     {
+        if (UdpOverTcp)
+        {
+            SendTCPMessage("UDPO" + MyClientID + message);
+            return;
+        }
+
         try
         {
             message = MyClientID + message;
@@ -406,7 +416,7 @@ public class Client : MonoBehaviour
                 IPEndPoint remoteEP = new IPEndPoint(IPAddress.Any, 0);
                 byte[] data = udpClient.Receive(ref remoteEP);
                 string receivedMessage = Encoding.ASCII.GetString(data);
-                //Debug.Log($"UDP Received: {receivedMessage}");
+                Debug.Log($"UDP Received: {receivedMessage}");
                 ParseUdpMessage(receivedMessage);
             }
             catch (Exception e)

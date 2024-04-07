@@ -39,7 +39,7 @@ public class VoiceChat : MonoBehaviour
     {
         Talking = Input.GetKey(PushToTalkKey);
 
-        if (Talking)
+        if (Talking && !client.UdpOverTcp)
         {
             timer += Time.deltaTime;
             if (timer > Delay)

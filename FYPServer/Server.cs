@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using System.Numerics;
 using System.Text;
 using System.Text.Json;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Networking {
     class Server
@@ -211,20 +212,23 @@ namespace Networking {
                 case "FORW":
                     ForwardMessage(data, tcpClient);
                     break;
+                case "UDPO":
+                    ForwardMessage(data, tcpClient, true);
+                    break;
                 default:
                     Console.WriteLine($"Unknown command: {command}");
                     break;
             }
         }
 
-        private static void ForwardMessage(string message, TcpClient tcpClient)
+        private static void ForwardMessage(string message, TcpClient tcpClient, bool udpOverTcp = false)
         {
             if (message.Length < COM.Values.ClientIDLength) return;
             string senderClientID = message.Substring(0, COM.Values.ClientIDLength);
             string recipientID = recipients[senderClientID];
             var recipient = clients[recipientID];
 
-            string response = "FORW" + message.Substring(COM.Values.ClientIDLength);
+            string response = (udpOverTcp ? "UDPO" : "FORW") + message.Substring(COM.Values.ClientIDLength);
             Console.WriteLine($"Sending response: {response}");
 
             // Send a message to its recipient.
