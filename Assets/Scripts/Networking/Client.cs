@@ -43,6 +43,11 @@ public class Client : MonoBehaviour
     List<NetworkNode> nodes = new List<NetworkNode>();
     public List<string> nodeTcpMessagePool = new List<string>();
 
+    public NetworkNode playerNode;
+    public NetworkNode playerAudioNode;
+    public NetworkNode peerNode;
+    public NetworkNode peerAudioNode;
+
     //DateTime lastPackageReceiveTime;
     //double ConnectionTimeout = 5.0;
 
@@ -273,6 +278,8 @@ public class Client : MonoBehaviour
         var ns = nodes.Where(n => n.ID == nodeID);
         if (!ns.Any()) return;
         var node = ns.First();
+        if (nodeID == playerNode.ID) node = peerNode;
+        if (nodeID == playerAudioNode.ID) node = peerAudioNode;
 
         string msg = message.Substring(ClientCOM.Values.NodeIDLength);
         if (msg.Length < NetworkNode.ActionCodes.ActionCodeLength) return;
@@ -292,6 +299,12 @@ public class Client : MonoBehaviour
                 break;
             case NetworkNode.ActionCodes.ResetLocalTransform:
                 gameController.ExecuteOnMainThread.Add(() => node.ResetLocalTransform(null, false));
+                break;
+            case NetworkNode.ActionCodes.PlayAudio:
+                gameController.ExecuteOnMainThread.Add(() => node.PlayAudio(data, null, false));
+                break;
+            case NetworkNode.ActionCodes.PauseAudio:
+                gameController.ExecuteOnMainThread.Add(() => node.PauseAudio(null, false));
                 break;
             default:
                 Console.WriteLine($"Unknown Network Node Action Code: {actionCode}");

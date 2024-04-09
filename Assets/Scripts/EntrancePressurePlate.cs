@@ -14,6 +14,7 @@ public class EntrancePressurePlate : MonoBehaviour
         {
             animator.GetComponentInParent<NetworkNode>().SetAnimationTrigger("TrDown", gameController.client, true);
             Door.GetComponentInParent<NetworkNode>().SetAnimationTrigger("TrOpen", gameController.client, true);
+            Door.GetComponentInParent<NetworkNode>().PlayAudio("", gameController.client, true);
         }
     }
 
@@ -23,6 +24,7 @@ public class EntrancePressurePlate : MonoBehaviour
         {
             animator.GetComponentInParent<NetworkNode>().SetAnimationTrigger("TrUp", gameController.client, true);
             Door.GetComponentInParent<NetworkNode>().SetAnimationTrigger("TrClose", gameController.client, true);
+            Door.GetComponentInParent<NetworkNode>().PlayAudio("", gameController.client, true);
         }
     }
 }

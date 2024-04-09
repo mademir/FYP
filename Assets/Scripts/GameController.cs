@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -75,6 +76,8 @@ public class GameController : MonoBehaviour
 
     bool isOnEscapeMenu = false;
 
+    public NetworkNode MainAudioSource;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -128,7 +131,11 @@ public class GameController : MonoBehaviour
                 Debug.Log("Player tags are assigned");
                 if (playerTag == "A") PressurePlatePuzzle.SetupPuzzle(); // Only let Player A setup the puzzle
                 UpdateSpawn();
-                foreach (NetworkNode doors in EntranceDoors) doors.SetAnimationTrigger("TrOpen", client, true);
+                foreach (NetworkNode doors in EntranceDoors)
+                {
+                    doors.SetAnimationTrigger("TrOpen", client, true);
+                    doors.PlayAudio("", client, true);
+                }
             }
         }
     }
@@ -175,6 +182,7 @@ public class GameController : MonoBehaviour
         SetupView(new List<GameObject> { EscapeMenu }); // Activate escape menu before turning off UI
         UI.SetActive(false);
         PlayerGO.GetComponent<PlayerController>().canMove = true;
+        Cursor.lockState = CursorLockMode.Locked;
     }
 
     private void OnApplicationQuit()
@@ -233,6 +241,10 @@ public class GameController : MonoBehaviour
     public void OnCheckpointReached(int c)
     {
         if (currentCheckpointIndex >= c) return;
+
+        // Play checkpoint sound
+        MainAudioSource.PlayAudio("Audio/checkpoint", client, true);
+
         currentCheckpointIndex = c;
         client.nodeTcpMessagePool.Add("FORW" + client.MyClientID + VariableUpdateCodes.VariableUpdateSpecialID + VariableUpdateCodes.SetCurrentCheckpointIndex + c.ToString()); //Update Peer Checkpoint
         UpdateSpawn();
@@ -240,21 +252,37 @@ public class GameController : MonoBehaviour
         {
             case 1:
                 Debug.Log("Checkpoint 1 Reached");
-                foreach (NetworkNode doors in Checkpoint1Doors) doors.SetAnimationTrigger("TrReached", client, true);
+                foreach (NetworkNode doors in Checkpoint1Doors)
+                {
+                    doors.SetAnimationTrigger("TrReached", client, true);
+                    doors.PlayAudio("", client, true);
+                }
                 foreach (NetworkNode swing in Swings) swing.SetAnimationTrigger("TrSwing", client, true);
                 break;
             case 2:
                 Debug.Log("Checkpoint 2 Reached");
-                foreach (NetworkNode doors in Checkpoint2Doors) doors.SetAnimationTrigger("TrReached", client, true);
+                foreach (NetworkNode doors in Checkpoint2Doors)
+                {
+                    doors.SetAnimationTrigger("TrReached", client, true);
+                    doors.PlayAudio("", client, true);
+                }
                 break;
             case 3:
                 Debug.Log("Checkpoint 3 Reached");
-                foreach (NetworkNode doors in Checkpoint3Doors) doors.SetAnimationTrigger("TrReached", client, true);
+                foreach (NetworkNode doors in Checkpoint3Doors)
+                {
+                    doors.SetAnimationTrigger("TrReached", client, true);
+                    doors.PlayAudio("", client, true);
+                }
                 fallingTilesPuzzle.SetTileColours();
                 break;
             case 4:
                 Debug.Log("Checkpoint 4 Reached");
-                foreach (NetworkNode doors in Checkpoint4Doors) doors.SetAnimationTrigger("TrReached", client, true);
+                foreach (NetworkNode doors in Checkpoint4Doors)
+                {
+                    doors.SetAnimationTrigger("TrReached", client, true);
+                    doors.PlayAudio("", client, true);
+                }
                 break;
             default: break;
         }
@@ -295,6 +323,7 @@ public class GameController : MonoBehaviour
 
     public void ResetGame()
     {
+        Cursor.lockState = CursorLockMode.None;
         PlayerPrefs.SetString("MyName", MyName);
         SceneManager.LoadScene("SampleScene");
     }
@@ -305,6 +334,8 @@ public class GameController : MonoBehaviour
     {
         if (lobbyController.MyLobby.CurrentGameState != COM.GameState.InGame) return;
         isOnEscapeMenu = !isOnEscapeMenu;
+
+        Cursor.lockState = isOnEscapeMenu ? CursorLockMode.None : CursorLockMode.Locked;
 
         PlayerGO.GetComponent<PlayerController>().canMove = !isOnEscapeMenu;
 

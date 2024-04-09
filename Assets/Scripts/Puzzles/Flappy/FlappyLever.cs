@@ -14,6 +14,7 @@ public class FlappyLever : MonoBehaviour
         {
             // Animate lever and alternating flaps 
             GetComponentInChildren<NetworkNode>().SetAnimationTrigger(onDefaultPosition ? "TrToRight" : "TrToLeft", client, true);
+            GetComponentInChildren<NetworkNode>().PlayAudio("" , client, true);
             onDefaultPosition = !onDefaultPosition;
 
             for (int i = 0; i < Flaps.Count; i++)

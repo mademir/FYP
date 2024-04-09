@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -16,8 +17,10 @@ public class PlayerController : MonoBehaviour
     private float verticalRotation = 0f;
     private float verticalRotationLimit = -80f;
     public bool canMove = false;
+    bool walking = false;
 
     public GameController gameController;
+    public AudioSource audioSource;
 
     public void LockCursor(bool state)
     {
@@ -60,11 +63,22 @@ public class PlayerController : MonoBehaviour
             Vector3 movement = (transform.forward * verticalInput + transform.right * horizontalInput) * moveSpeed;
             rb.velocity = new Vector3(movement.x, rb.velocity.y, movement.z);
 
+            if (Math.Abs(rb.velocity.x) > 0.01f || Math.Abs(rb.velocity.z) > 0.01f)
+            {
+                if (!walking) GetComponent<NetworkNode>().PlayAudio("", gameController.client, true);
+                walking = true;
+            }
+            else
+            {
+                if (walking) GetComponent<NetworkNode>().PauseAudio(gameController.client, true);
+                walking = false;
+            }
 
             // Jumping
             if (isGrounded && Input.GetButtonDown("Jump"))
             {
                 rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
+                audioSource.GetComponent<NetworkNode>().PlayAudio("Audio/jump", gameController.client, true);
             }
 
             // Mouse rotation for the player left-right movement.
@@ -90,5 +104,6 @@ public class PlayerController : MonoBehaviour
     public void Die()
     {
         transform.SetPositionAndRotation(gameController.CurrentSpawn.position, gameController.CurrentSpawn.rotation);
+        audioSource.GetComponent<NetworkNode>().PlayAudio("Audio/death", gameController.client, true);
     }
 }

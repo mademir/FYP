@@ -62,7 +62,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   animator: {fileID: 2321348489882383303}
   Door: {fileID: 0}
-  client: {fileID: 0}
+  gameController: {fileID: 0}
 --- !u!95 &2321348489882383303
 Animator:
   serializedVersion: 4
@@ -383,7 +383,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: d2982da838a1d9b4b9eba5c9de8b6493, type: 2}
+  - {fileID: 2100000, guid: ccb0a82864ba776489c408a6cf36f459, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0

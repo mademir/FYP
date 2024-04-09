@@ -10,6 +10,7 @@ public class FallingTile : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        Fallable.GetComponent<NetworkNode>().PlayAudio("Audio/tile-step-in", Puzzle.gameController.client, true);
         if (KeyTileIndex > -1)
         {
             Puzzle.OnKeyTileEnter(KeyTileIndex);
@@ -21,6 +22,7 @@ public class FallingTile : MonoBehaviour
 
     private void OnTriggerExit(Collider other)
     {
+        Fallable.GetComponent<NetworkNode>().PlayAudio("Audio/tile-step-out", Puzzle.gameController.client, true);
         if (KeyTileIndex == -1)
         {
             DropTile();
@@ -30,6 +32,7 @@ public class FallingTile : MonoBehaviour
     public void DropTile()
     {
         Fallable.GetComponent<NetworkNode>().SetIsKinematic("false", Puzzle.gameController.client, true);
+        Fallable.GetComponent<NetworkNode>().PlayAudio("Audio/tile-fall", Puzzle.gameController.client, true);
     }
 
     public void ResetTile()

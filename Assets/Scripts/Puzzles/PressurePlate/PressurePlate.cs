@@ -18,6 +18,7 @@ public class PressurePlate : MonoBehaviour
         if (other.gameObject.tag == "Player")
         {
             animator.SetTrigger("TrDown");
+            GetComponent<AudioSource>().Play();
             if (!checkPlateIsOnPath()) other.GetComponent<PlayerController>().Die();
         }
     }

@@ -13,6 +13,8 @@ public class NetworkNode : MonoBehaviour
         public const string SetAnimationTrigger = "ANIMT";
         public const string SetIsKinematic = "ISKNM";
         public const string ResetLocalTransform = "RSTLT";
+        public const string PlayAudio = "PLYAU";
+        public const string PauseAudio = "PAUAU";
     }
 
     public string ID = new string('0', ClientCOM.Values.NodeIDLength);
@@ -46,5 +48,21 @@ public class NetworkNode : MonoBehaviour
         transform.localRotation = Quaternion.identity;
 
         if (isLocal) client.nodeTcpMessagePool.Add("FORW" + client.MyClientID + ID.ToString() + ActionCodes.ResetLocalTransform);
+    }
+
+    public void PlayAudio(string clipPath, Client client, bool isLocal = true)
+    {
+        var source = GetComponent<AudioSource>();
+        if (clipPath != "") source.clip = Resources.Load<AudioClip>(clipPath);
+        source.Play();
+
+        if (isLocal) client.nodeTcpMessagePool.Add("FORW" + client.MyClientID + ID.ToString() + ActionCodes.PlayAudio + clipPath);
+    }
+
+    public void PauseAudio(Client client, bool isLocal = true)
+    {
+        GetComponent<AudioSource>().Pause();
+
+        if (isLocal) client.nodeTcpMessagePool.Add("FORW" + client.MyClientID + ID.ToString() + ActionCodes.PauseAudio);
     }
 }
