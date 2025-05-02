@@ -8,9 +8,16 @@ public class FlappyLever : MonoBehaviour
     public GameObject PressEText;
     public List<GameObject> Flaps = new List<GameObject>();
     bool onDefaultPosition = true;
+    PlayerController playerController;
+
+    private void Start()
+    {
+        playerController = client.gameController.PlayerGO.GetComponent<PlayerController>();
+    }
+
     private void OnTriggerStay(Collider other)
     {
-        if (other.gameObject.tag == "Player" && Input.GetKeyDown(KeyCode.E))
+        if (other.gameObject.tag == "Player" && playerController.isInteractKeyPressed)
         {
             // Animate lever and alternating flaps 
             GetComponentInChildren<NetworkNode>().SetAnimationTrigger(onDefaultPosition ? "TrToRight" : "TrToLeft", client, true);
