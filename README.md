@@ -38,7 +38,10 @@ These titles influenced the puzzle design, communication-centric gameplay, and i
  One player sees four symbols and a grid of pressure plates.  
  The other sees four drawings with possible movement paths.  
  They must communicate clearly to determine which path to take and solve the puzzle collaboratively.
-   
+
+## 📺 Presentation and Demo  
+[![Watch the video](https://img.youtube.com/vi/B1Q7A9euLyU/maxresdefault.jpg)](https://youtu.be/B1Q7A9euLyU)
+
 ## 📸 Gameplay Images
 
 Below are snapshots from different levels in the game:
